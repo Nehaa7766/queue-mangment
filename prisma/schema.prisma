@@ -1,0 +1,309 @@
+// Data model from docs/PLAN.md §8.
+// The connection URL lives in prisma.config.ts.
+//
+// Lines marked "Assumption:" are working defaults until Phase 0 confirms them
+// with the pilot clinic (docs/PLAN.md §19).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+// Assumption: one role per user per clinic.
+enum MembershipRole {
+  RECEPTIONIST
+  DOCTOR
+  CLINIC_ADMIN
+}
+
+// Platform staff only; kept on User, separate from clinic memberships.
+enum PlatformRole {
+  SUPER_ADMIN
+}
+
+enum ClinicStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  INACTIVE
+}
+
+enum QueueStatus {
+  OPEN
+  PAUSED
+  CLOSED
+}
+
+// Allowed transitions live in src/features/queue (docs/PLAN.md §9).
+enum TokenStatus {
+  WAITING
+  CALLED
+  IN_SERVICE
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+// What happens when the grace period runs out on a called token.
+enum NoShowAction {
+  SKIP
+  REQUEUE
+}
+
+// ---------------------------------------------------------------------------
+// Tenancy and people
+// ---------------------------------------------------------------------------
+
+// Queue settings sit on Clinic rather than a 1:1 ClinicSettings model: they
+// are always read with the clinic, so a separate row only adds a join.
+model Clinic {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  name         String
+  slug         String       @unique
+  // IANA name; queue days are computed in this timezone.
+  timezone     String       @default("Asia/Kolkata")
+  address      String?
+  phone        String?
+  // Weekly hours, e.g. { "mon": [["09:00", "13:00"]] }. Edited in Phase 7.
+  openingHours Json?        @map("opening_hours")
+  status       ClinicStatus @default(ACTIVE)
+
+  // Assumption: one wait target for the whole clinic, not per service.
+  waitTargetMinutes  Int          @default(20) @map("wait_target_minutes")
+  // Assumption: 5 minutes for a called patient to arrive.
+  gracePeriodSeconds Int          @default(300) @map("grace_period_seconds")
+  // Null means no limit.
+  maxQueueSize       Int?         @map("max_queue_size")
+  noShowAction       NoShowAction @default(SKIP) @map("no_show_action")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships ClinicMembership[]
+  services    Service[]
+  queues      Queue[]
+  tokens      QueueToken[]
+  auditEvents AuditEvent[]
+
+  @@map("clinics")
+}
+
+// Staff and platform users only. Patients have no account in the MVP.
+model User {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  name         String
+  email        String        @unique
+  // Set once authentication is wired (Phase 2, Auth.js step).
+  passwordHash String?       @map("password_hash")
+  platformRole PlatformRole? @map("platform_role")
+  status       UserStatus    @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships    ClinicMembership[]
+  assignedTokens QueueToken[]       @relation("AssignedDoctor")
+  createdTokens  QueueToken[]       @relation("CreatedBy")
+  auditEvents    AuditEvent[]
+
+  @@map("users")
+}
+
+model ClinicMembership {
+  id       String           @id @default(uuid(7)) @db.Uuid
+  clinicId String           @map("clinic_id") @db.Uuid
+  userId   String           @map("user_id") @db.Uuid
+  role     MembershipRole
+  status   MembershipStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([clinicId, userId])
+  @@index([userId])
+  @@map("clinic_memberships")
+}
+
+// ---------------------------------------------------------------------------
+// Services and queues
+// ---------------------------------------------------------------------------
+
+model Service {
+  id                       String  @id @default(uuid(7)) @db.Uuid
+  clinicId                 String  @map("clinic_id") @db.Uuid
+  name                     String
+  description              String?
+  // First part of the display label, e.g. "A" in "A-17".
+  tokenPrefix              String  @map("token_prefix") @db.VarChar(4)
+  estimatedDurationMinutes Int     @default(10) @map("estimated_duration_minutes")
+  // Soft-disable keeps past tokens and analytics intact.
+  isActive                 Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic Clinic       @relation(fields: [clinicId], references: [id])
+  queues Queue[]
+  tokens QueueToken[]
+
+  @@unique([clinicId, name])
+  @@unique([clinicId, tokenPrefix])
+  @@map("services")
+}
+
+// Assumption: one queue per service per clinic day, shared by every doctor
+// on that service. Sequence numbers restart each day with the new row.
+model Queue {
+  id           String      @id @default(uuid(7)) @db.Uuid
+  clinicId     String      @map("clinic_id") @db.Uuid
+  serviceId    String      @map("service_id") @db.Uuid
+  // Calendar day in the clinic's timezone, not UTC.
+  queueDate    DateTime    @map("queue_date") @db.Date
+  status       QueueStatus @default(OPEN)
+  // Atomic counter for sequenceNumber and sortKey. Allocate with
+  // UPDATE ... SET next_sequence = next_sequence + 1 RETURNING.
+  nextSequence Int         @default(1) @map("next_sequence")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic      Clinic       @relation(fields: [clinicId], references: [id])
+  service     Service      @relation(fields: [serviceId], references: [id])
+  tokens      QueueToken[]
+  auditEvents AuditEvent[]
+
+  @@unique([serviceId, queueDate])
+  @@index([clinicId, queueDate])
+  @@map("queues")
+}
+
+model QueueToken {
+  id            String      @id @default(uuid(7)) @db.Uuid
+  // Used in the patient's status URL. v4 is fully random; v7 would expose
+  // the creation time and be partly guessable.
+  publicTokenId String      @unique @default(uuid(4)) @map("public_token_id")
+  queueId       String      @map("queue_id") @db.Uuid
+  // Copied from the queue so tenant checks don't need a join.
+  clinicId      String      @map("clinic_id") @db.Uuid
+  serviceId     String      @map("service_id") @db.Uuid
+  // Never changes; the source of tokenLabel.
+  sequenceNumber Int        @map("sequence_number")
+  // FIFO order. Equals sequenceNumber at join; a requeue takes a fresh value
+  // from the same counter so the token moves to the end.
+  sortKey       Int         @map("sort_key")
+  tokenLabel    String      @map("token_label") @db.VarChar(16)
+  // Assumption: optional first name or initials only; no phone in the MVP.
+  patientName   String?     @map("patient_name") @db.VarChar(80)
+  status        TokenStatus @default(WAITING)
+  recallCount   Int         @default(0) @map("recall_count")
+
+  // Assumption: doctors share the service queue; this records who serves it.
+  assignedDoctorId String? @map("assigned_doctor_id") @db.Uuid
+  // Null for patient self-service joins.
+  createdByUserId  String? @map("created_by_user_id") @db.Uuid
+
+  joinedAt         DateTime  @default(now()) @map("joined_at")
+  calledAt         DateTime? @map("called_at")
+  serviceStartedAt DateTime? @map("service_started_at")
+  completedAt      DateTime? @map("completed_at")
+  skippedAt        DateTime? @map("skipped_at")
+  cancelledAt      DateTime? @map("cancelled_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  queue          Queue        @relation(fields: [queueId], references: [id])
+  clinic         Clinic       @relation(fields: [clinicId], references: [id])
+  service        Service      @relation(fields: [serviceId], references: [id])
+  assignedDoctor User?        @relation("AssignedDoctor", fields: [assignedDoctorId], references: [id])
+  createdBy      User?        @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  auditEvents    AuditEvent[]
+
+  @@unique([queueId, sequenceNumber])
+  @@index([queueId, status, sortKey])
+  @@index([clinicId, createdAt])
+  @@index([assignedDoctorId, status])
+  @@map("queue_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Audit, outbox, idempotency
+// ---------------------------------------------------------------------------
+
+// Append-only. Links are cleared, not cascaded, so history survives deletes.
+model AuditEvent {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  clinicId      String   @map("clinic_id") @db.Uuid
+  queueId       String?  @map("queue_id") @db.Uuid
+  tokenId       String?  @map("token_id") @db.Uuid
+  // Null for patient self-service or system actions.
+  actorUserId   String?  @map("actor_user_id") @db.Uuid
+  // Dotted verb, e.g. "token.called", "queue.paused".
+  action        String
+  previousState String?  @map("previous_state")
+  newState      String?  @map("new_state")
+  // Keep small; no patient details beyond what the token already holds.
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  clinic Clinic      @relation(fields: [clinicId], references: [id])
+  queue  Queue?      @relation(fields: [queueId], references: [id], onDelete: SetNull)
+  token  QueueToken? @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  actor  User?       @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId, createdAt])
+  @@index([tokenId])
+  @@map("audit_events")
+}
+
+// Written in the same transaction as the action; sent later by a worker (Phase 8).
+model OutboxEvent {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  eventType    String    @map("event_type")
+  aggregateId  String    @map("aggregate_id")
+  payload      Json
+  createdAt    DateTime  @default(now()) @map("created_at")
+  processedAt  DateTime? @map("processed_at")
+  attemptCount Int       @default(0) @map("attempt_count")
+  // Sanitized: no secrets or patient details.
+  lastError    String?   @map("last_error")
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_events")
+}
+
+// Lets a retried request return the original result instead of acting twice.
+model IdempotencyRecord {
+  id                 String   @id @default(uuid(7)) @db.Uuid
+  // e.g. "queue:<queueId>:join" — keys only collide within one scope.
+  scope              String
+  idempotencyKey     String   @map("idempotency_key") @db.VarChar(128)
+  // sha256 of the canonical request body.
+  requestFingerprint String   @map("request_fingerprint") @db.Char(64)
+  // ID of what the original request created, e.g. a QueueToken id.
+  responseReference  String   @map("response_reference")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@unique([scope, idempotencyKey])
+  @@map("idempotency_records")
+}

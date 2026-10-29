@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * QueueCare design tokens. Class names and usage rules: docs/GUI_RULES.md.
+ * Light theme only in v1.
+ */
+
+/* Brand colors, status pairs and shapes. */
+@theme {
+  /* Drop Tailwind's built-in slate and stone scales so they can't be mixed up with the brand colors. */
+  --color-slate-*: initial;
+  --color-stone-*: initial;
+
+  --color-charcoal: #2a2d34;
+  --color-slate: #475c6c;
+  --color-slate-tint: #e6ecf0;
+  --color-slate-hover: #5a7182;
+  --color-slate-muted: #dce3e8;
+  --color-stone: #8a8583; /* decoration only, never text */
+  --color-sand: #eed7a1;
+  --color-cream: #f7efd2;
+  --color-terracotta: #cd8b62;
+  --color-terracotta-text: #b4532a;
+  --color-divider: #f3eedf;
+
+  --color-status-wait: #f6efa6;
+  --color-status-wait-foreground: #5c5410;
+  --color-status-done: #dcfce7;
+  --color-status-done-foreground: #15803d;
+  --color-status-miss: #fee2e2;
+  --color-status-miss-foreground: #b91c1c;
+  --color-status-off: #f1ece4;
+  --color-status-off-foreground: #5f5a57;
+
+  --radius-card: 12px;
+  --radius-btn: 10px;
+}
+
+/* shadcn/ui roles, mapped onto the brand colors. */
+@theme inline {
+  --font-sans: var(--font-inter), var(--font-devanagari), sans-serif;
+  --font-display: var(--font-jakarta), sans-serif;
+  --font-heading: var(--font-jakarta), sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #fbf7ec; /* page */
+  --foreground: #2a2d34; /* charcoal */
+  --card: #ffffff;
+  --card-foreground: #2a2d34;
+  --popover: #ffffff;
+  --popover-foreground: #2a2d34;
+  --primary: #cd8b62; /* terracotta: the single most important action on screen */
+  --primary-foreground: #2a2d34; /* never white on terracotta */
+  --secondary: #e6ecf0;
+  --secondary-foreground: #2a2d34;
+  --muted: #f3eedf; /* background, not a text color */
+  --muted-foreground: #5f5a57; /* secondary text */
+  --accent: #f7efd2; /* cream hover */
+  --accent-foreground: #2a2d34;
+  --destructive: #b91c1c;
+  --border: #e9e2d0;
+  --input: #e9e2d0;
+  --ring: #475c6c;
+  --chart-1: #475c6c;
+  --chart-2: #cd8b62;
+  --chart-3: #eed7a1;
+  --chart-4: #8a8583;
+  --chart-5: #2a2d34;
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2a2d34;
+  --sidebar-primary: #475c6c;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f7efd2;
+  --sidebar-accent-foreground: #2a2d34;
+  --sidebar-border: #e9e2d0;
+  --sidebar-ring: #475c6c;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}

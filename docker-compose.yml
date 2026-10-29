@@ -1,0 +1,96 @@
+# Everything runs in Docker; the host only needs Docker.
+#   Dev server:         docker compose up --watch          -> http://localhost:3000
+#   Lint, types, tests: docker compose exec app npm run lint | typecheck | test
+#   Production + E2E:   docker compose --profile test run --rm e2e
+name: queuecare
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: queuecare
+      POSTGRES_PASSWORD: queuecare
+      POSTGRES_DB: queuecare_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U queuecare -d queuecare_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Development server with hot reload.
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql://queuecare:queuecare@db:5432/queuecare_dev
+      TEST_DATABASE_URL: postgresql://queuecare:queuecare@db:5432/queuecare_test
+    depends_on:
+      db:
+        condition: service_healthy
+    develop:
+      # Compose Watch copies edits into the container. This works on Windows,
+      # where file-change events from bind mounts don't reach the container.
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+            - src/generated/
+        - action: rebuild
+          path: package-lock.json
+        - action: rebuild
+          path: prisma/schema.prisma
+
+  # Production image, used for end-to-end tests.
+  web:
+    profiles: [test]
+    build:
+      context: .
+      target: runner
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgresql://queuecare:queuecare@db:5432/queuecare_test
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  e2e:
+    profiles: [test]
+    build:
+      context: .
+      target: e2e
+    environment:
+      E2E_BASE_URL: http://web:3000
+      CI: ${CI:-}
+    volumes:
+      - ./playwright-report:/e2e/playwright-report
+      - ./test-results:/e2e/test-results
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  pgdata:
