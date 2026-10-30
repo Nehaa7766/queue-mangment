@@ -50,6 +50,8 @@ export function queueView(
     ],
     waiting,
     recent: overrides.recent ?? [],
+    completedToday: overrides.completedToday ?? [],
+    missedToday: overrides.missedToday ?? [],
     settings: {
       waitTargetMinutes: 20,
       gracePeriodSeconds: 300,

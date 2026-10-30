@@ -28,7 +28,7 @@ queue-mangment/
 │   └── STAFF_GUIDE.md              # one-page guides for reception and doctors
 ├── prisma/
 │   ├── schema.prisma               # data model; the connection URL lives in prisma.config.ts
-│   ├── seed.sql                    # demo clinic, staff logins, pilot plan; refuses non-local databases
+│   ├── seed.sql                    # demo clinic and staff logins; refuses non-local databases
 │   └── migrations/                 # init, auth (Better Auth tables), phases_6_to_10
 ├── public/                         # static files served as-is
 ├── src/
@@ -47,7 +47,7 @@ queue-mangment/
 │   │   │   ├── receptionist/       # dashboard, queue, walk-in, history, tokens/[tokenId]
 │   │   │   └── doctor/             # dashboard, queue, consultation, history, availability
 │   │   ├── (clinic-admin)/admin/   # dashboard, services, doctors, staff, roles, settings, qr-code (+ poster), analytics, audit
-│   │   ├── (platform-admin)/super-admin/  # dashboard (analytics), clinics, users, plans, subscriptions, billing, activity, support, settings — with create/edit/delete
+│   │   ├── (platform-admin)/super-admin/  # dashboard (analytics), clinics (+ [clinicId]), users (+ [userId]), activity, support (+ [ticketId]), settings — with add/edit/delete
 │   │   ├── (onboarding)/           # signup (+ pending), support tickets for clinic staff
 │   │   └── api/
 │   │       ├── health/             # GET /api/health; outbox counts only with the job token
@@ -59,7 +59,7 @@ queue-mangment/
 │   │       ├── clinics/[clinicId]/ # queues/today, dashboard, and the admin APIs (services, staff, members, doctors, settings, holidays, invitations, analytics, audit)
 │   │       ├── services/[serviceId]/       # edit or disable one service
 │   │       ├── invitations/[token]/accept/ # accept a staff invitation
-│   │       ├── platform/           # super admin APIs: clinics (+ slug check, subscription), users (+ password reset), plans, support tickets, settings, activity
+│   │       ├── platform/           # super admin APIs: clinics (+ slug check; the logo goes with add and edit), users (+ admin invitations, password reset), support tickets, settings, activity
 │   │       ├── onboarding/         # signup, slug availability
 │   │       ├── support/tickets/    # tickets from clinic staff
 │   │       └── internal/           # outbox/process, retention/run (bearer INTERNAL_JOB_SECRET)
@@ -73,7 +73,7 @@ queue-mangment/
 │   │   ├── patient/                # patient screens, ticket hero, join form; messages.ts holds all patient text
 │   │   ├── doctor/                 # doctor screens, availability form, break and delay banners
 │   │   ├── admin/                  # admin managers and forms, opening hours editor, QR actions
-│   │   ├── platform/               # super admin: platform-chrome.tsx (wires AppShell), form-kit.tsx (form fields + dialogs), delete-button.tsx (type-to-confirm), *-forms.tsx, data-table, ListCard (section-card.tsx), range tabs, charts/
+│   │   ├── platform/               # super admin: platform-chrome.tsx (wires AppShell), form-kit.tsx (sheet, fields, footer errors), clinic-profile-fields.tsx, icon-action.tsx (icon row actions + tooltips), pagination.tsx, invite-link.tsx, clinic-avatar.tsx, delete-button.tsx (type-to-confirm), *-forms.tsx, data-table, ListCard (section-card.tsx), range tabs, charts/
 │   │   ├── onboarding/             # signup wizard, support ticket form
 │   │   └── auth/                   # login ticket (login-ticket.tsx, ticket-meta.tsx, login-form.tsx), forgot and reset password forms, auth-shell, sign-out button
 │   ├── features/                   # domain modules; business rules live here
@@ -98,11 +98,11 @@ queue-mangment/
 │   │   │   ├── templates.ts        # invitation and password reset emails
 │   │   │   └── password-reset.ts   # queues the reset email for Better Auth
 │   │   ├── retention/              # clears old patient names; internal job auth
-│   │   ├── platform/               # clinics, users, subscriptions, billing, support, settings, platform audit
+│   │   ├── platform/               # clinics (lifecycle, hours), users, support, settings, analytics, pagination, platform audit
 │   │   └── onboarding/             # self-service signup, slug checks
 │   ├── generated/prisma/           # Prisma client output (gitignored, made by `prisma generate`)
 │   ├── lib/
-│   │   ├── auth/                   # Better Auth instance, session, guards, permission matrix, staff context, role→home
+│   │   ├── auth/                   # Better Auth instance, session, guards, permission matrix, staff context, role→home, demo accounts for the sign-in page
 │   │   ├── db/index.ts             # getDb(): lazy Prisma client with @prisma/adapter-pg
 │   │   ├── email/                  # sender interface: Resend, or in-memory for dev and tests
 │   │   ├── errors/                 # AppError, ERROR_STATUS, toErrorResponse(), withApiHandler()

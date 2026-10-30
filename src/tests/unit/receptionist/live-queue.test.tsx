@@ -46,7 +46,12 @@ afterEach(() => {
 
 function renderQueue(view = queueView()) {
   return render(
-    <LiveQueue initialView={view} queues={[view.queue]} initialNow={NOW} />,
+    <LiveQueue
+      initialView={view}
+      queues={[view.queue]}
+      initialNow={NOW}
+      timezone="Asia/Kolkata"
+    />,
   );
 }
 
@@ -132,7 +137,7 @@ describe("LiveQueue", () => {
     );
     // A-17 is back on the ticket and A-18 is back in Up next.
     expect(ticket()).toHaveTextContent("A-17");
-    const upNext = screen.getByRole("region", { name: /Up next/ });
+    const upNext = screen.getByRole("tabpanel", { name: /Up next/ });
     expect(within(upNext).getByText("A-18")).toBeInTheDocument();
   });
 
@@ -163,5 +168,137 @@ describe("LiveQueue", () => {
         expect.objectContaining({ method: "GET" }),
       ),
     );
+  });
+});
+
+// 05:30–05:42 UTC is 11:00–11:12 in Asia/Kolkata.
+const completed = staffToken({
+  id: "13",
+  status: "COMPLETED",
+  calledAt: "2026-10-30T05:28:00Z",
+  serviceStartedAt: "2026-10-30T05:30:00Z",
+  completedAt: "2026-10-30T05:42:00Z",
+  assignedDoctorName: "Dr. Shah",
+});
+
+const withDoctor = staffToken({
+  id: "15",
+  status: "IN_SERVICE",
+  calledAt: "2026-10-30T05:44:00Z",
+  serviceStartedAt: "2026-10-30T05:46:00Z",
+  assignedDoctorName: "Dr. Rao",
+});
+
+const tab = (name: RegExp) => screen.getByRole("tab", { name });
+
+describe("LiveQueue patient tabs", () => {
+  it("shows today's patients by stage, with a count on each tab", () => {
+    renderQueue(
+      queueView({
+        current: [
+          withDoctor,
+          staffToken({
+            id: "17",
+            status: "CALLED",
+            calledAt: "2026-10-30T05:58:00Z",
+          }),
+        ],
+        completedToday: [completed],
+        missedToday: [staffToken({ id: "12", status: "SKIPPED" })],
+      }),
+    );
+
+    expect(tab(/^Up next/)).toHaveAttribute("aria-selected", "true");
+    expect(tab(/^Up next/)).toHaveTextContent("2");
+    expect(tab(/^In consultation/)).toHaveTextContent("1");
+    expect(tab(/^Completed/)).toHaveTextContent("1");
+    expect(tab(/^No-show/)).toHaveTextContent("1");
+
+    fireEvent.click(tab(/^In consultation/));
+    const withDoctors = screen.getByRole("tabpanel");
+    expect(withDoctors).toHaveTextContent("A-15");
+    expect(withDoctors).toHaveTextContent("Started 11:16 · with Dr. Rao");
+
+    fireEvent.click(tab(/^Completed/));
+    const done = screen.getByRole("tabpanel", { name: /Completed/ });
+    expect(done).toHaveTextContent("A-13");
+    expect(done).toHaveTextContent("Completed 11:12 · Dr. Shah · General");
+    expect(done).toHaveTextContent("12 min");
+  });
+
+  it("moves between tabs with the arrow keys", () => {
+    renderQueue();
+
+    fireEvent.keyDown(tab(/^Up next/), { key: "ArrowLeft" });
+
+    const missed = tab(/^No-show/);
+    expect(missed).toHaveAttribute("aria-selected", "true");
+    expect(missed).toHaveFocus();
+    expect(screen.getByRole("tabpanel")).toHaveTextContent(
+      "No no-shows or cancellations today.",
+    );
+  });
+
+  it("lists a skipped patient under No-show before the server answers", async () => {
+    let resolve!: (value: Response) => void;
+    fetchMock.mockImplementationOnce(
+      () => new Promise<Response>((r) => (resolve = r)),
+    );
+    fetchMock.mockImplementation(() => respond(200, queueView()));
+    renderQueue();
+
+    fireEvent.click(within(ticket()).getByRole("button", { name: "Skip" }));
+    fireEvent.click(screen.getByRole("button", { name: "Skip patient" }));
+
+    expect(tab(/^No-show/)).toHaveTextContent("1");
+    fireEvent.click(tab(/^No-show/));
+    const row = within(screen.getByRole("tabpanel"))
+      .getAllByRole("listitem")
+      .find((item) => item.textContent?.includes("A-17"));
+    expect(row).toHaveTextContent("No-show");
+    expect(
+      within(row!).getByRole("button", { name: "Requeue" }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      resolve(
+        await respond(200, {
+          token: staffToken({ id: "17", status: "SKIPPED" }),
+        }),
+      );
+    });
+  });
+
+  it("shows a consultation the doctor completed under Completed after the next poll", async () => {
+    const before = queueView({ current: [withDoctor] });
+    const finished = {
+      ...withDoctor,
+      status: "COMPLETED" as const,
+      completedAt: "2026-10-30T05:58:00Z",
+    };
+    fetchMock.mockImplementation(() =>
+      respond(
+        200,
+        queueView({ current: [], completedToday: [finished, completed] }),
+      ),
+    );
+    renderQueue(before);
+    expect(tab(/^In consultation/)).toHaveTextContent("1");
+    expect(tab(/^Completed/)).toHaveTextContent("0");
+
+    // The poll runs when the tab becomes visible, as well as every 10 s.
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+
+    await waitFor(() => expect(tab(/^Completed/)).toHaveTextContent("2"));
+    expect(tab(/^In consultation/)).toHaveTextContent("0");
+    fireEvent.click(tab(/^Completed/));
+    const rows = within(screen.getByRole("tabpanel")).getAllByRole("listitem");
+    // Newest first, with the doctor and the consultation length.
+    expect(rows[0]).toHaveTextContent("A-15");
+    expect(rows[0]).toHaveTextContent("Completed 11:28 · Dr. Rao");
+    expect(rows[0]).toHaveTextContent("12 min");
+    expect(rows[1]).toHaveTextContent("A-13");
   });
 });

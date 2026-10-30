@@ -44,6 +44,8 @@ The seed creates **Demo Clinic** (`/q/demo-clinic`) with three services (General
 
 These are development accounts only. Never seed them into production.
 
+In development the sign-in page lists them under **Demo accounts**: pick a role to fill in its email and password, then press **Open my counter**. A production build hides the list unless the server sets `DEMO_LOGINS=true`, which is meant for a demo server that runs the seed's database.
+
 ## Everyday commands
 
 Run these while `docker compose up --watch` is running in another terminal.

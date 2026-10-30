@@ -68,6 +68,7 @@ async function LiveQueueSection({
         initialView={view}
         queues={queues}
         initialNow={now}
+        timezone={context.clinic.timezone}
       />
     </>
   );
@@ -79,10 +80,7 @@ function LiveQueueSkeleton() {
       <Skeleton className="h-14 rounded-none" />
       <Skeleton className="h-14 rounded-card" />
       <Skeleton className="h-44 rounded-card" />
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Skeleton className="h-72 rounded-card" />
-        <Skeleton className="h-56 rounded-card" />
-      </div>
+      <Skeleton className="h-72 rounded-card" />
       <span className="sr-only">Loading the live queue…</span>
     </div>
   );

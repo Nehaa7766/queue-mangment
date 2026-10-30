@@ -1,4 +1,4 @@
-import { getEnv } from "@/lib/env";
+import { getEnv, type Env } from "@/lib/env";
 
 // The accounts prisma/seed.sql creates in the local databases, one per
 // panel. Keep this list and the seed in step.
@@ -14,7 +14,8 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
 ];
 
 // Shown in development, or on a demo server with DEMO_LOGINS=true.
-export function demoLoginsEnabled(): boolean {
-  const env = getEnv();
+export function demoLoginsEnabled(
+  env: Pick<Env, "NODE_ENV" | "DEMO_LOGINS"> = getEnv(),
+): boolean {
   return env.NODE_ENV !== "production" || env.DEMO_LOGINS === true;
 }

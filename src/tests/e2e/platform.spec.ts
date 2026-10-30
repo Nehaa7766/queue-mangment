@@ -78,9 +78,15 @@ test("super admin adds and views a clinic, adds a second admin, then edits and d
   await test.step("view it", async () => {
     await page.getByRole("link", { name: `View ${name}` }).click();
     await expect(page.getByRole("heading", { name })).toBeVisible();
-    await expect(page.getByText("Dental", { exact: true })).toBeVisible();
-    await expect(page.getByText("Mon–Sat · 09:00–18:00")).toBeVisible();
-    await expect(page.getByText("Pune", { exact: true })).toBeVisible();
+    // Scoped to the cards: the list page may still be in the DOM, hidden.
+    const details = page.getByRole("region", { name: "Details" });
+    await expect(details.getByText("Dental", { exact: true })).toBeVisible();
+    await expect(details.getByText("Mon–Sat · 09:00–18:00")).toBeVisible();
+    await expect(
+      page
+        .getByRole("region", { name: "Contact and location" })
+        .getByText("Pune", { exact: true }),
+    ).toBeVisible();
     await page.goto("/super-admin/clinics");
   });
 
@@ -160,11 +166,20 @@ test("super admin adds and views a clinic, adds a second admin, then edits and d
     await expect(
       page.getByRole("heading", { name: "Asha Admin" }),
     ).toBeVisible();
-    await expect(page.getByText("admin@demo-clinic.test")).toBeVisible();
+    // Scoped to the cards: the Users list may still be in the DOM, hidden.
     await expect(
-      page.getByRole("link", { name: "Demo Clinic", exact: true }),
+      page
+        .getByRole("region", { name: "Profile" })
+        .getByText("admin@demo-clinic.test"),
     ).toBeVisible();
-    await expect(page.getByText("Recent actions")).toBeVisible();
+    await expect(
+      page
+        .getByRole("region", { name: "Clinic access" })
+        .getByRole("link", { name: "Demo Clinic", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Recent actions" }),
+    ).toBeVisible();
     // The same icon actions as on the Users page.
     await expect(
       page.getByRole("button", { name: "Edit Asha Admin" }),

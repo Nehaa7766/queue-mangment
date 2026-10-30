@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { TokenBadge } from "@/components/dashboard/list-row";
+import { SegmentTabs } from "@/components/dashboard/segment-tabs";
 import { TokenStatusPill } from "@/components/queue/status-pill";
 import {
   displayName,
@@ -20,7 +21,6 @@ import {
   waitedMinutes,
 } from "./patient-display";
 import { inServiceWithCurrent } from "./patient-tabs";
-import { SegmentTabs } from "./segment-tabs";
 import type { DoctorPanel } from "./use-doctor-panel";
 
 type Kind = "inService" | "called" | "waiting" | "done";

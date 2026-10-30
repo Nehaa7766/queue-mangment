@@ -28,16 +28,20 @@ export function useDoctorPanel(initialView: DoctorPanelView) {
   );
   const [refreshFailed, setRefreshFailed] = useState(false);
   const pendingRef = useRef(false);
+  // Bumped by every action, so a poll that started before one can't undo it,
+  // e.g. put a just-completed patient back in consultation.
+  const actionsRef = useRef(0);
   const viewRef = useRef(view);
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
 
   const refresh = useCallback(async () => {
+    const actions = actionsRef.current;
     try {
       const fresh = await apiRequest<DoctorPanelView>(DOCTOR_API.panel);
       // Don't overwrite an optimistic update that is still in flight.
-      if (!pendingRef.current) {
+      if (!pendingRef.current && actions === actionsRef.current) {
         setView(fresh);
         setLastSynced(Date.now());
       }
@@ -64,6 +68,7 @@ export function useDoctorPanel(initialView: DoctorPanelView) {
       if (pendingRef.current) return;
       const before = viewRef.current;
       pendingRef.current = true;
+      actionsRef.current += 1;
       setPending(action);
       setView(applyOptimistic(before, action, new Date().toISOString()));
       try {

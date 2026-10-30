@@ -11,6 +11,9 @@ import type { TokenAction, TokenStatus } from "./token-status";
 // reuse it on retry, so a double tap never creates two tokens.
 export const IDEMPOTENCY_KEY_HEADER = "idempotency-key";
 
+// Cap on each of the staff view's full-day lists (completedToday, missedToday).
+export const STAFF_DAY_LIST_LIMIT = 300;
+
 // ---- Request bodies ----
 
 const patientName = z.string().trim().min(1).max(80);
@@ -125,6 +128,11 @@ export type StaffQueueView = {
   waiting: StaffTokenView[];
   // Last 20 COMPLETED, SKIPPED or CANCELLED tokens, newest first.
   recent: StaffTokenView[];
+  // A queue is one clinic day, so these are today's: COMPLETED tokens,
+  // latest completion first, and SKIPPED or CANCELLED ones, latest first.
+  // Up to STAFF_DAY_LIST_LIMIT each.
+  completedToday: StaffTokenView[];
+  missedToday: StaffTokenView[];
   settings: {
     waitTargetMinutes: number;
     gracePeriodSeconds: number;

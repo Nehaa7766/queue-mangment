@@ -169,6 +169,23 @@ divider rows), side drawer, modal, toast with Undo, banner (paused /
 offline / doctor on break), skeleton loader, empty state, form fields
 with inline validation, toggle, select.
 
+Super admin pieces (`src/components/platform/`):
+
+- **Icon row actions** (`icon-action.tsx`): every table row's actions sit
+  on one line as square icon buttons, View first. The accessible name
+  says what and whom ("Edit Asha Admin"); the tooltip gives the short
+  name, or why the action is unavailable.
+- **Pager** (`pagination.tsx`): "Showing 11–20 of 57" with numbered page
+  links on wider screens and "Page 2 of 6" on phones. Links keep the
+  page's other filters; changing a filter goes back to page 1.
+- **Add and edit sheets** (`form-kit.tsx`): a side panel with a pinned
+  footer. When a check fails, the footer says so and the first bad field
+  gets focus, since the field may be scrolled out of view.
+- **Clinic avatar** (`clinic-avatar.tsx`): the clinic's logo, or its
+  first letter when none is uploaded.
+- **Invite link** (`invite-link.tsx`): shown once after adding an admin
+  by email, with a copy button; only its hash is stored.
+
 ## 6. Layout
 
 Every signed-in panel uses the shared shell in
@@ -190,7 +207,7 @@ lists.
 
 Patient screens are mobile-first, have no staff navigation and no login.
 
-The sign-in page uses its own "ticket" layout (`src/components/auth/login-ticket.tsx`): a decorative date-and-shift stub (hidden from screen readers) joined to the sign-in form, whose button reads "Open my counter". The other auth pages (forgot and reset password, no access, errors) keep the split `AuthShell` layout.
+The sign-in page uses its own "ticket" layout (`src/components/auth/login-ticket.tsx`): a decorative date-and-shift stub (hidden from screen readers) joined to the sign-in form, whose button reads "Open my counter". In development, or with `DEMO_LOGINS=true`, a dashed "Demo accounts" box under the button lists one seeded account per panel; choosing one fills in the email and password without signing in. The other auth pages (forgot and reset password, no access, errors) keep the split `AuthShell` layout.
 
 ## 7. Interactions
 

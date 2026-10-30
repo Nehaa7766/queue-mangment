@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -325,5 +326,122 @@ describe("AvailabilityQuickToggle", () => {
         }),
       }),
     );
+  });
+});
+
+describe("In consultation to Done today", () => {
+  // Started 05:53 UTC (11:23 in Asia/Kolkata); completed at NOW, 11:30.
+  const inConsultation = staffToken({
+    id: "16",
+    status: "IN_SERVICE",
+    serviceStartedAt: new Date(NOW - 7 * 60_000).toISOString(),
+    assignedDoctorName: "Dr. Shah",
+  });
+  const consulting = panelView({
+    current: inConsultation,
+    inService: [inConsultation],
+    completedToday: [finished],
+  });
+  const completedView = panelView({
+    completedToday: [
+      {
+        ...inConsultation,
+        status: "COMPLETED",
+        completedAt: new Date(NOW).toISOString(),
+      },
+      finished,
+    ],
+    seenToday: 4,
+  });
+  const tab = (name: RegExp) => screen.getByRole("tab", { name });
+  const completeInHighlight = () =>
+    within(screen.getByRole("region", { name: "In consultation" })).getByRole(
+      "button",
+      { name: /Complete consultation/ },
+    );
+
+  it("moves the patient on the dashboard before the server answers", async () => {
+    let resolveComplete!: (response: Response) => void;
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) =>
+      init?.method === "POST"
+        ? new Promise<Response>((r) => (resolveComplete = r))
+        : respond(200, completedView),
+    );
+    render(<DoctorDashboard initialView={consulting} />);
+    expect(tab(/In consultation/)).toHaveTextContent("1");
+    expect(tab(/Done today/)).toHaveTextContent("1");
+
+    fireEvent.click(completeInHighlight());
+
+    // Counts and the list change at once, while the request is in flight.
+    expect(tab(/In consultation/)).toHaveTextContent("0");
+    expect(tab(/Done today/)).toHaveTextContent("2");
+    const glance = screen.getByRole("region", { name: "Today at a glance" });
+    expect(
+      within(glance).getByText("Seen today").previousElementSibling,
+    ).toHaveTextContent("4");
+    fireEvent.click(tab(/Done today/));
+    const rows = within(screen.getByRole("tabpanel")).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("A-16");
+    expect(rows[0]).toHaveTextContent("11:23–11:30");
+    expect(rows[0]).toHaveTextContent("7 min");
+    expect(rows[1]).toHaveTextContent("A-15");
+
+    await act(async () => {
+      resolveComplete(
+        await respond(200, { token: completedView.completedToday[0] }),
+      );
+    });
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        "Consultation with A-16 · Patient 16 completed.",
+      ),
+    );
+    expect(tab(/Done today/)).toHaveTextContent("2");
+  });
+
+  it("moves the patient on the queue board too", () => {
+    fetchMock.mockImplementation(() => new Promise<Response>(() => {}));
+    render(<DoctorQueueBoard initialView={consulting} />);
+    expect(tab(/Done today/)).toHaveTextContent("1");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Complete consultation/ }),
+    );
+
+    expect(tab(/In consultation/)).toHaveTextContent("0");
+    expect(tab(/Done today/)).toHaveTextContent("2");
+    fireEvent.click(tab(/Done today/));
+    const table = screen.getByRole("table");
+    expect(table).toHaveTextContent("A-16");
+    expect(table).toHaveTextContent("11:23–11:30");
+  });
+
+  it("ignores a poll that started before the patient was completed", async () => {
+    let resolveStalePoll!: (response: Response) => void;
+    let polls = 0;
+    fetchMock.mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        return respond(200, { token: completedView.completedToday[0] });
+      }
+      polls += 1;
+      // The first poll is slow and still has the patient in consultation.
+      return polls === 1
+        ? new Promise<Response>((r) => (resolveStalePoll = r))
+        : respond(200, completedView);
+    });
+    render(<DoctorDashboard initialView={consulting} />);
+
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    fireEvent.click(completeInHighlight());
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    await act(async () => {
+      resolveStalePoll(await respond(200, consulting));
+    });
+
+    expect(tab(/Done today/)).toHaveTextContent("2");
+    expect(tab(/In consultation/)).toHaveTextContent("0");
   });
 });

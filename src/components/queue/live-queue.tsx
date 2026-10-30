@@ -40,9 +40,9 @@ import {
   upsertToken,
   type LiveQueueAction,
 } from "./live-queue-state";
-import { MiniTicketRow } from "./mini-ticket-row";
 import { NowServingTicket } from "./now-serving-ticket";
-import { QueueStatusPill, TokenStatusPill } from "./status-pill";
+import { QueueTabs } from "./queue-tabs";
+import { QueueStatusPill } from "./status-pill";
 import { displayName } from "./token-display";
 import { useNow } from "./use-now";
 import { WalkInForm } from "./walk-in-form";
@@ -79,10 +79,13 @@ export function LiveQueue({
   initialView,
   queues,
   initialNow,
+  timezone,
 }: {
   initialView: StaffQueueView;
   queues: StaffQueueSummary[];
   initialNow: number;
+  // The clinic's, for times in the patient lists.
+  timezone: string;
 }) {
   const [view, setView] = useState(initialView);
   const [pending, setPending] = useState<LiveQueueAction["type"] | null>(null);
@@ -91,6 +94,8 @@ export function LiveQueue({
   const [lastSynced, setLastSynced] = useState(initialNow);
   const now = useNow(initialNow);
   const pendingRef = useRef(false);
+  // Bumped by every action, so a poll that started before one can't undo it.
+  const actionsRef = useRef(0);
   // Latest view for actions started later, e.g. from an Undo toast.
   const viewRef = useRef(view);
   useEffect(() => {
@@ -99,10 +104,11 @@ export function LiveQueue({
   const queueId = view.queue.queueId;
 
   const refresh = useCallback(async () => {
+    const actions = actionsRef.current;
     try {
       const fresh = await apiRequest<StaffQueueView>(API.queueTokens(queueId));
       // Don't overwrite an optimistic update that is still in flight.
-      if (!pendingRef.current) {
+      if (!pendingRef.current && actions === actionsRef.current) {
         setView(fresh);
         setLastSynced(Date.now());
       }
@@ -132,6 +138,7 @@ export function LiveQueue({
       if (pendingRef.current) return;
       const before = viewRef.current;
       pendingRef.current = true;
+      actionsRef.current += 1;
       setPending(action.type);
       setView(applyOptimistic(before, action, new Date().toISOString()));
       try {
@@ -174,7 +181,6 @@ export function LiveQueue({
 
   const blockedReason = callNextBlockedReason(view, pending === "callNext");
   const featured = nowServingToken(view);
-  const others = view.current.filter((token) => token.id !== featured?.id);
 
   // Keyboard shortcut N for Call next (docs/GUI_RULES.md §7).
   useEffect(() => {
@@ -343,114 +349,24 @@ export function LiveQueue({
         }
       />
 
-      {others.length > 0 && (
-        <DashboardCard
-          title="Also called or with a doctor"
-          bodyClassName="px-5 py-1"
-        >
-          <ul className="flex flex-col divide-y divide-divider">
-            {others.map((token) => (
-              <li
-                key={token.id}
-                className="flex flex-wrap items-center gap-3 py-2"
-              >
-                <span className="font-display font-extrabold tabular-nums">
-                  {token.tokenLabel}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm">
-                  {displayName(token.patientName)}
-                </span>
-                <TokenStatusPill status={token.status} />
-                {token.status === "CALLED" && (
-                  <span className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 rounded-btn"
-                      disabled={pending !== null}
-                      onClick={() =>
-                        void run({ type: "recall", tokenId: token.id })
-                      }
-                    >
-                      Recall
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 rounded-btn"
-                      disabled={pending !== null}
-                      onClick={() => setConfirm({ type: "skip", token })}
-                    >
-                      Skip
-                    </Button>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </DashboardCard>
-      )}
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <DashboardCard
-          title={`Up next · ${view.waiting.length}`}
-          description="In queue order. Open a row for the token's details."
-        >
-          {view.waiting.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No one is waiting. New patients appear here as they join.
-            </p>
-          ) : (
-            <ol className="flex flex-col gap-2">
-              {view.waiting.map((token, index) => (
-                <MiniTicketRow
-                  key={token.id}
-                  token={token}
-                  isNext={index === 0}
-                  now={now}
-                  waitTargetMinutes={view.settings.waitTargetMinutes}
-                  href={`/receptionist/tokens/${token.id}`}
-                />
-              ))}
-            </ol>
-          )}
-        </DashboardCard>
-
-        <DashboardCard title="Recently finished" bodyClassName="px-5 py-1">
-          {view.recent.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Finished, skipped and cancelled tokens show here.
-            </p>
-          ) : (
-            <ul className="flex flex-col divide-y divide-divider">
-              {view.recent.map((token) => (
-                <li key={token.id} className="flex items-center gap-3 py-2.5">
-                  <span className="font-display font-extrabold tabular-nums">
-                    {token.tokenLabel}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">
-                    {displayName(token.patientName)}
-                  </span>
-                  <TokenStatusPill status={token.status} />
-                  {token.status === "SKIPPED" && view.settings.allowRequeue && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 rounded-btn"
-                      disabled={pending !== null}
-                      onClick={() =>
-                        void run({ type: "requeue", tokenId: token.id })
-                      }
-                    >
-                      Requeue
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </DashboardCard>
-      </div>
+      <DashboardCard
+        title="Today's patients"
+        description="Patients move to Completed as soon as the doctor finishes."
+        bodyClassName="p-0"
+      >
+        <QueueTabs
+          view={view}
+          featuredId={featured?.id ?? null}
+          now={now}
+          timezone={timezone}
+          disabled={pending !== null}
+          onRecall={(token) => void run({ type: "recall", tokenId: token.id })}
+          onSkip={(token) => setConfirm({ type: "skip", token })}
+          onRequeue={(token) =>
+            void run({ type: "requeue", tokenId: token.id })
+          }
+        />
+      </DashboardCard>
 
       <AlertDialog
         open={confirm !== null}

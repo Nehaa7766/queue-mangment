@@ -6,12 +6,13 @@ import { requireClinicPermission } from "@/lib/auth/guards";
 import { getDb } from "@/lib/db";
 import { AppError } from "@/lib/errors/app-error";
 import { clinicToday, isOpenNow, toDbDate } from "./clinic-time";
-import type {
-  PublicClinicView,
-  PublicTokenView,
-  StaffQueueSummary,
-  StaffQueueView,
-  StaffTokenView,
+import {
+  STAFF_DAY_LIST_LIMIT,
+  type PublicClinicView,
+  type PublicTokenView,
+  type StaffQueueSummary,
+  type StaffQueueView,
+  type StaffTokenView,
 } from "./contracts";
 import { ensureTodayQueues } from "./service";
 import {
@@ -256,34 +257,49 @@ export async function getStaffQueueView(
   }
   await requireClinicPermission(queue.clinicId, "queue.view");
 
-  const [current, waiting, recent, doctors] = await Promise.all([
-    db.queueToken.findMany({
-      where: { queueId, status: { in: ["CALLED", "IN_SERVICE"] } },
-      orderBy: { calledAt: "asc" },
-      select: staffTokenSelect,
-    }),
-    db.queueToken.findMany({
-      where: { queueId, status: "WAITING" },
-      orderBy: { sortKey: "asc" },
-      select: staffTokenSelect,
-    }),
-    db.queueToken.findMany({
-      where: {
-        queueId,
-        status: { in: ["COMPLETED", "SKIPPED", "CANCELLED"] },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: RECENT_LIMIT,
-      select: staffTokenSelect,
-    }),
-    findServingDoctors(db, queue.clinicId, [queue.serviceId]),
-  ]);
+  const [current, waiting, recent, completed, missed, doctors] =
+    await Promise.all([
+      db.queueToken.findMany({
+        where: { queueId, status: { in: ["CALLED", "IN_SERVICE"] } },
+        orderBy: { calledAt: "asc" },
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: { queueId, status: "WAITING" },
+        orderBy: { sortKey: "asc" },
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: {
+          queueId,
+          status: { in: ["COMPLETED", "SKIPPED", "CANCELLED"] },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: RECENT_LIMIT,
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: { queueId, status: "COMPLETED" },
+        orderBy: [{ completedAt: "desc" }, { sequenceNumber: "desc" }],
+        take: STAFF_DAY_LIST_LIMIT,
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: { queueId, status: { in: ["SKIPPED", "CANCELLED"] } },
+        orderBy: [{ updatedAt: "desc" }, { sequenceNumber: "desc" }],
+        take: STAFF_DAY_LIST_LIMIT,
+        select: staffTokenSelect,
+      }),
+      findServingDoctors(db, queue.clinicId, [queue.serviceId]),
+    ]);
 
   return {
     queue: toQueueSummary(queue, waiting.length),
     current: current.map(toStaffTokenView),
     waiting: waiting.map(toStaffTokenView),
     recent: recent.map(toStaffTokenView),
+    completedToday: completed.map(toStaffTokenView),
+    missedToday: missed.map(toStaffTokenView),
     settings: {
       waitTargetMinutes: queue.clinic.waitTargetMinutes,
       gracePeriodSeconds: queue.clinic.gracePeriodSeconds,

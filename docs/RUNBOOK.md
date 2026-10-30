@@ -25,6 +25,7 @@ Run **one** app instance for the pilot. Rate limits are kept in memory
 | `BETTER_AUTH_URL` | Yes | The public **https** URL, e.g. `https://queue.example.com`. Must be HTTPS in production, or session cookies aren't marked `Secure`. |
 | `INTERNAL_JOB_SECRET` | Yes | At least 32 random characters. Protects `/api/internal/*` and the detailed health check. |
 | `RESEND_API_KEY`, `EMAIL_FROM` | For email | Phase 8. `EMAIL_FROM` must use a domain verified with Resend. |
+| `DEMO_LOGINS` | No | Leave unset. `true` lists the seeded demo accounts and their password on the sign-in page; only for a demo server. |
 | `TRUSTED_IP_HEADER` | Behind a proxy | Once SECURITY_REVIEW finding 1 is patched: the header your proxy **overwrites** with the client IP, usually `x-forwarded-for`. |
 
 Keep secrets in the platform's secret manager. Never reuse the

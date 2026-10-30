@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SegmentTabs } from "@/components/dashboard/segment-tabs";
 import { CalledPatientList } from "./called-patient-list";
 import { startBlockedReason } from "./doctor-panel-state";
 import {
@@ -8,7 +9,6 @@ import {
   InServiceList,
   WaitingByService,
 } from "./patient-lists";
-import { SegmentTabs } from "./segment-tabs";
 import type { DoctorPanel } from "./use-doctor-panel";
 
 type PatientTab = "inService" | "called" | "waiting" | "done";

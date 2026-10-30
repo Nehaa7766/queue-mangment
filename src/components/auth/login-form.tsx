@@ -47,7 +47,7 @@ export function LoginForm({
   const submitRef = useRef<HTMLButtonElement>(null);
 
   // Fills both fields and moves focus to the button, so Enter signs in.
-  function useDemoAccount(email: string, password: string) {
+  function fillDemoAccount(email: string, password: string) {
     if (emailRef.current) emailRef.current.value = email;
     if (passwordRef.current) passwordRef.current.value = password;
     setFieldErrors({});
@@ -164,8 +164,10 @@ export function LoginForm({
           aria-labelledby="demo-accounts-title"
           className="rounded-btn border border-dashed border-border bg-background/60 p-3"
         >
-          <p id="demo-accounts-title" className="text-xs font-semibold">
-            Demo accounts{" "}
+          {/* Named "Demo accounts" only, so the region doesn't also match
+              getByLabel("Password"). */}
+          <p className="text-xs font-semibold">
+            <span id="demo-accounts-title">Demo accounts</span>{" "}
             <span className="font-normal text-muted-foreground">
               · password <code className="font-mono">{demo.password}</code>
             </span>
@@ -175,7 +177,7 @@ export function LoginForm({
               <button
                 key={account.email}
                 type="button"
-                onClick={() => useDemoAccount(account.email, demo.password)}
+                onClick={() => fillDemoAccount(account.email, demo.password)}
                 className="min-w-0 rounded-btn border border-border bg-card px-3 py-2 text-left transition-colors outline-none hover:border-brand hover:bg-brand-tint focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <span className="block text-xs font-semibold">

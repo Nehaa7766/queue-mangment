@@ -62,9 +62,13 @@ test("receptionist registers a walk-in, then calls, recalls and skips them", asy
     page.waitForResponse((response) => response.url().includes("/skip")),
     confirm.getByRole("button", { name: "Skip patient" }).click(),
   ]);
-  const recent = page.getByRole("region", { name: "Recently finished" });
+  const patients = page.getByRole("region", { name: "Today's patients" });
+  await patients.getByRole("tab", { name: /^No-show/ }).click();
   await expect(
-    recent.getByRole("listitem").filter({ hasText: label }),
+    patients
+      .getByRole("tabpanel")
+      .getByRole("listitem")
+      .filter({ hasText: label }),
   ).toContainText("No-show");
 });
 

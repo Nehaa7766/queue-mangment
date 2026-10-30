@@ -61,7 +61,6 @@ test("reception calls a patient, the doctor starts and completes the visit, and 
     ]);
   }
   await expect(ticket).toContainText(label);
-  await reception.close();
 
   // 3. The doctor signs in and starts our patient.
   const doctorContext = await browser.newContext({
@@ -109,7 +108,35 @@ test("reception calls a patient, the doctor starts and completes the visit, and 
   ]);
   await expect(doctor.getByText(/No consultation in progress/)).toBeVisible();
 
-  // 5. The patient's page shows the visit as done.
+  // 5. The doctor sees the patient under Done today, on the dashboard and
+  // the queue board.
+  await doctor.goto("/doctor");
+  await doctor.getByRole("tab", { name: /^Done today/ }).click();
+  await expect(
+    doctor
+      .getByRole("tabpanel")
+      .getByRole("listitem")
+      .filter({ hasText: label }),
+  ).toContainText(patientName);
+  await doctor.goto("/doctor/queue");
+  await doctor.getByRole("tab", { name: /^Done today/ }).click();
+  await expect(
+    doctor.getByRole("row").filter({ hasText: label }),
+  ).toContainText("Done");
+
+  // 6. Reception's open queue lists it under Completed on its next poll.
+  await desk.bringToFront();
+  const patients = desk.getByRole("region", { name: "Today's patients" });
+  await patients.getByRole("tab", { name: /^Completed/ }).click();
+  await expect(
+    patients
+      .getByRole("tabpanel")
+      .getByRole("listitem")
+      .filter({ hasText: label }),
+  ).toContainText(patientName, { timeout: 15_000 });
+  await reception.close();
+
+  // 7. The patient's page shows the visit as done.
   await page.reload();
   await expect(
     page.getByText("Visit completed", { exact: true }),
