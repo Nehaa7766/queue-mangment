@@ -39,6 +39,11 @@ export type DoctorPanelView = DoctorQueueView & {
   // `called` is narrowed to these services; `waiting` lists WAITING tokens per
   // service in queue order (services by token prefix).
   waiting: StaffTokenView[];
+  // Everyone in consultation today in these services, with any doctor,
+  // earliest start first. Includes `current` when it is from today.
+  inService: StaffTokenView[];
+  // This doctor's finished consultations today, newest first.
+  completedToday: StaffTokenView[];
   seenToday: number;
   averageConsultationMinutes: number | null;
   // The clinic's wait target, for "over target" colouring.

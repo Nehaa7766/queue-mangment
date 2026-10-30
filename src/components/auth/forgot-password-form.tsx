@@ -112,7 +112,7 @@ function BackToSignIn() {
   return (
     <Link
       href="/login"
-      className="self-center rounded-sm text-sm font-medium text-slate underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="self-center rounded-sm text-sm font-medium text-brand underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       Back to sign in
     </Link>

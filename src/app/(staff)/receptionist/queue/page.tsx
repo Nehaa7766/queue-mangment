@@ -10,6 +10,11 @@ import { LiveQueue } from "@/components/queue/live-queue";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStaffQueueView, getTodayQueues } from "@/features/queue/queries";
 
+const BREADCRUMBS = [
+  { label: "Reception", href: "/receptionist" },
+  { label: "Live queue" },
+];
+
 export default function LiveQueuePage({
   searchParams,
 }: PageProps<"/receptionist/queue">) {
@@ -32,8 +37,12 @@ async function LiveQueueSection({
   if (queues.length === 0) {
     return (
       <>
-        <PageHeader title="Live queue" status="No queues today" />
-        <p className="rounded-card border border-dashed border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
+        <PageHeader
+          title="Live queue"
+          breadcrumbs={BREADCRUMBS}
+          status="No queues today"
+        />
+        <p className="rounded-card border border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground shadow-card">
           There are no queues today. Queues open with the clinic&apos;s hours
           for each active service.
         </p>
@@ -51,7 +60,8 @@ async function LiveQueueSection({
     <>
       <PageHeader
         title="Live queue"
-        status={`${context.clinic.name} · press N to call the next patient`}
+        breadcrumbs={BREADCRUMBS}
+        status="Press N to call the next patient"
       />
       <LiveQueue
         key={selected.queueId}
@@ -65,16 +75,12 @@ async function LiveQueueSection({
 
 function LiveQueueSkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4">
-      <Skeleton className="h-8 w-40" />
-      <Skeleton className="h-10 w-full max-w-md" />
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Skeleton className="h-14 rounded-none" />
+      <Skeleton className="h-14 rounded-card" />
       <Skeleton className="h-44 rounded-card" />
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-14 rounded-[10px]" />
-          ))}
-        </div>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <Skeleton className="h-72 rounded-card" />
         <Skeleton className="h-56 rounded-card" />
       </div>
       <span className="sr-only">Loading the live queue…</span>

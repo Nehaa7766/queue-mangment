@@ -1,12 +1,14 @@
 "use client";
 
+import { PowerIcon, RotateCcwIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import type { UserStatus } from "@/generated/prisma/enums";
+import { IconAction } from "./icon-action";
 import { errorMessage, requestJson } from "./request";
 
+// Deactivate or reactivate a user (row action).
 export function UserStatusButton({
   userId,
   name,
@@ -21,6 +23,7 @@ export function UserStatusButton({
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const next = status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+  const action = next === "ACTIVE" ? "Reactivate" : "Deactivate";
 
   async function change() {
     setPending(true);
@@ -43,15 +46,18 @@ export function UserStatusButton({
   }
 
   return (
-    <Button
-      variant="outline"
-      className="h-10 rounded-btn px-3"
-      disabled={pending || (isSelf && next === "INACTIVE")}
-      title={isSelf ? "You can't deactivate your own account." : undefined}
+    <IconAction
+      icon={next === "ACTIVE" ? RotateCcwIcon : PowerIcon}
+      label={`${action} ${name}`}
+      tip={action}
+      blockedReason={
+        isSelf && next === "INACTIVE"
+          ? "You can't deactivate your own account."
+          : null
+      }
+      danger={next === "INACTIVE"}
+      disabled={pending}
       onClick={change}
-    >
-      {next === "ACTIVE" ? "Reactivate" : "Deactivate"}
-      <span className="sr-only"> {name}</span>
-    </Button>
+    />
   );
 }

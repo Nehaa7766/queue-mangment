@@ -71,7 +71,7 @@ test("reception calls a patient, the doctor starts and completes the visit, and 
   await doctor.goto("/login");
   await doctor.getByLabel("Email").fill(DOCTOR_EMAIL);
   await doctor.getByLabel("Password").fill(PASSWORD);
-  await doctor.getByRole("button", { name: "Sign in" }).click();
+  await doctor.getByRole("button", { name: "Open my counter" }).click();
   await expect(doctor).toHaveURL(/\/doctor$/);
 
   await doctor.goto("/doctor/consultation");

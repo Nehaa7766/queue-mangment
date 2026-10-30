@@ -1,7 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { UsersIcon } from "lucide-react";
 import { describe, expect, it } from "vitest";
-import { KpiCard } from "@/components/queue/kpi-card";
 import { MiniTicketRow } from "@/components/queue/mini-ticket-row";
 import { NowServingTicket } from "@/components/queue/now-serving-ticket";
 import { NOW, staffToken } from "./fixtures";
@@ -81,7 +79,7 @@ describe("MiniTicketRow", () => {
     );
 
     expect(screen.getByText("24m").parentElement).toHaveClass(
-      "text-terracotta-text",
+      "text-danger-text",
     );
     // Screen readers hear "24 minutes" instead of "24m".
     expect(screen.getByText("24 minutes")).toHaveClass("sr-only");
@@ -109,43 +107,9 @@ describe("MiniTicketRow", () => {
     );
 
     expect(screen.getByText("5m").parentElement).not.toHaveClass(
-      "text-terracotta-text",
+      "text-danger-text",
     );
     expect(screen.getByText("waited")).toBeInTheDocument();
     expect(screen.queryByText(/next up/)).not.toBeInTheDocument();
-  });
-});
-
-describe("KpiCard", () => {
-  it("shows the value with an arrowed, coloured trend", () => {
-    render(
-      <KpiCard
-        label="Waiting now"
-        value={20}
-        icon={UsersIcon}
-        trend={{
-          direction: "up",
-          value: "+4",
-          good: false,
-          comparison: "vs last hour",
-        }}
-      />,
-    );
-
-    expect(screen.getByText("20")).toBeInTheDocument();
-    expect(screen.getByText("↗ +4")).toHaveClass("text-terracotta-text");
-    expect(screen.getByText("vs last hour")).toBeInTheDocument();
-  });
-
-  it("shows a caption when there is no trend", () => {
-    render(
-      <KpiCard
-        label="Served today"
-        value={52}
-        icon={UsersIcon}
-        caption="Consultations completed"
-      />,
-    );
-    expect(screen.getByText("Consultations completed")).toBeInTheDocument();
   });
 });

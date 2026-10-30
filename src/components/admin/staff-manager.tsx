@@ -177,17 +177,18 @@ export function StaffManager({
     });
 
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-5">
       {invitations.length > 0 && (
         <AdminSection
           title="Waiting to accept"
           description="Links can't be shown again. To send a fresh link, invite the person again."
+          flush
         >
           <ul className="flex flex-col divide-y divide-divider">
             {invitations.map((invitation) => (
               <li
                 key={invitation.id}
-                className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center"
+                className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center"
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{invitation.name}</p>
@@ -219,6 +220,7 @@ export function StaffManager({
       <AdminSection
         title="Team"
         description="Change a role, reset a password, or remove someone's access. Removing access keeps their history."
+        flush
       >
         <ul className="flex flex-col divide-y divide-divider">
           {members.map((member) => {
@@ -227,12 +229,12 @@ export function StaffManager({
             return (
               <li
                 key={member.membershipId}
-                className="flex flex-col gap-3 py-3 lg:flex-row lg:items-center"
+                className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <span
                     aria-hidden
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-tint font-display text-sm font-bold text-slate"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-tint font-display text-sm font-bold text-brand"
                   >
                     {initials(member.name)}
                   </span>

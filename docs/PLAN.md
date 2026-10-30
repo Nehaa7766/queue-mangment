@@ -553,6 +553,15 @@ implementation, merged from `queuecare-design-spec.md` (last updated
 30 Oct 2026). Keep `GUI_RULES.md` as the shared design contract and keep
 it consistent with this section.
 
+> **Design update, 30 Oct 2026.** The visual design moved from the warm
+> "slate and terracotta on cream" palette to a **warm mocha and off-white** palette (off-white, blush, dusty rose, tan, mocha) in the
+> layout of a modern admin template: white sidebar, white top bar, a
+> breadcrumb strip, stat cards with progress lines, a mocha highlight
+> card and trend cards. [GUI_RULES.md](GUI_RULES.md) §1--§6 describe the
+> current colours, components and layout and win where §12.2--§12.6 and
+> §12.12 below still describe the old palette. The screens, routes and
+> behaviour in the rest of this section are unchanged.
+
 ### 12.1 UI goals
 
 -   Patients see their token, position and estimated wait on a phone

@@ -4,6 +4,7 @@ import { CoffeeIcon, PlayIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { ApiError } from "@/components/queue/api-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { DoctorSelfView } from "@/features/doctor/contracts";
@@ -54,30 +55,20 @@ export function AvailabilityQuickToggle({
   }
 
   return (
-    <section
-      aria-labelledby="availability-title"
-      className="flex flex-col gap-3 rounded-card border border-border bg-card p-5"
+    <DashboardCard
+      title="Your availability"
+      action={<AvailabilityBadge doctor={doctor} className="shrink-0" />}
+      bodyClassName="flex flex-col gap-4"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2
-            id="availability-title"
-            className="font-display text-base font-bold"
-          >
-            Your availability
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {AVAILABILITY_DISPLAY[doctor.availability].description}
-          </p>
-        </div>
-        <AvailabilityBadge doctor={doctor} className="shrink-0" />
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {AVAILABILITY_DISPLAY[doctor.availability].description}
+      </p>
       {doctor.note && (
-        <p className="text-sm text-muted-foreground">
+        <p className="rounded-btn bg-muted px-3 py-2 text-sm text-muted-foreground">
           Note for reception: “{doctor.note}”
         </p>
       )}
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:flex-row xl:flex-col 2xl:flex-row">
         <Button
           variant={available ? "outline" : "default"}
           className="h-11 rounded-btn px-4 font-semibold"
@@ -101,6 +92,6 @@ export function AvailabilityQuickToggle({
           More options
         </Link>
       </div>
-    </section>
+    </DashboardCard>
   );
 }

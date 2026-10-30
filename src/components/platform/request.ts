@@ -17,7 +17,10 @@ export class RequestError extends Error {
 
 export async function requestJson<T>(
   url: string,
-  options: { method?: "GET" | "POST" | "PUT" | "PATCH"; body?: unknown } = {},
+  options: {
+    method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+    body?: unknown;
+  } = {},
 ): Promise<T> {
   let response: Response;
   try {

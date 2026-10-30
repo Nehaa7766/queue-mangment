@@ -20,7 +20,9 @@ for (const path of ["/", "/login", "/api/health"]) {
     expect(headers["x-content-type-options"]).toBe("nosniff");
     expect(headers["x-frame-options"]).toBe("DENY");
     expect(headers["referrer-policy"]).toBe("same-origin");
-    expect(headers["permissions-policy"]).toContain("camera=()");
+    // Camera for our own pages only (the home page QR scanner); never microphone.
+    expect(headers["permissions-policy"]).toContain("camera=(self)");
+    expect(headers["permissions-policy"]).toContain("microphone=()");
     expect(headers["permissions-policy"]).toContain("geolocation=()");
     expect(headers["x-powered-by"]).toBeUndefined();
   });

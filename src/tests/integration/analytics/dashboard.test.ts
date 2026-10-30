@@ -190,6 +190,26 @@ describe("getDashboardView", () => {
     ]);
   });
 
+  it("adds the numbers behind the stat cards, chart and trend cards", async () => {
+    const view = await getDashboardView(ids.clinic, now);
+    const sum = (key: "joined" | "served") =>
+      view.flow.reduce((total, point) => total + point[key], 0);
+
+    expect(view.kpis).toMatchObject({ calledToday: 2, totalToday: 4 });
+    expect(sum("joined")).toBe(4);
+    expect(sum("served")).toBe(1);
+    expect(view.queues).toEqual([
+      expect.objectContaining({
+        serviceName: "General",
+        tokenPrefix: "A",
+        waiting: 2,
+        served: 1,
+        total: 4,
+      }),
+    ]);
+    expect(view.queues[0].servedByHour).toHaveLength(view.flow.length);
+  });
+
   it("lists recent activity newest first, with names", async () => {
     const view = await getDashboardView(ids.clinic, now);
 

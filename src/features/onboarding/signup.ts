@@ -9,11 +9,6 @@ import { AppError } from "@/lib/errors/app-error";
 import type { SignupInput } from "./signup-schema";
 import { clinicSlugSchema } from "./slug";
 
-// Self-service clinics start on this plan (seeded by prisma/seed.sql).
-export const SIGNUP_PLAN_CODE = "pilot";
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 export type SignupResult = {
   clinicId: string;
   clinicSlug: string;
@@ -52,8 +47,8 @@ export async function checkSlugAvailability(
     : { available: true };
 }
 
-// Creates the clinic, its first service, the admin's account and membership,
-// and a trial subscription — all or nothing.
+// Creates the clinic, its first service, and the admin's account and
+// membership — all or nothing.
 //
 // Assumption until a platform admin process is agreed: new clinics start
 // INACTIVE ("pending approval"). Their admin can't use staff screens and
@@ -67,17 +62,9 @@ export async function signUpClinic(
   assertSignupsOpen(settings);
   // Hash outside the transaction: scrypt is deliberately slow.
   const passwordHash = await hashPassword(input.password);
-  const now = Date.now();
 
   try {
     return await getDb().$transaction(async (tx) => {
-      const plan = await tx.plan.findUnique({
-        where: { code: SIGNUP_PLAN_CODE },
-        select: { id: true },
-      });
-      if (!plan) {
-        throw new Error(`Signup plan "${SIGNUP_PLAN_CODE}" is missing.`);
-      }
       if (
         await tx.clinic.findUnique({
           where: { slug: input.clinicSlug },
@@ -127,14 +114,6 @@ export async function signUpClinic(
       });
       await tx.clinicMembership.create({
         data: { clinicId: clinic.id, userId: user.id, role: "CLINIC_ADMIN" },
-      });
-      await tx.subscription.create({
-        data: {
-          clinicId: clinic.id,
-          planId: plan.id,
-          status: "TRIALING",
-          trialEndsAt: new Date(now + settings.defaultTrialDays * DAY_MS),
-        },
       });
       await recordPlatformAudit(tx, {
         actorUserId: user.id,

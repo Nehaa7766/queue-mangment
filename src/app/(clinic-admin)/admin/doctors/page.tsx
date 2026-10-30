@@ -1,3 +1,4 @@
+import { UserPlusIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { DoctorsManager } from "@/components/admin/doctors-manager";
@@ -29,19 +30,17 @@ async function Doctors() {
       <PageHeader
         title="Doctors"
         status="Choose which services each doctor serves."
-        search={false}
+        breadcrumbs={[{ label: "Clinic setup" }, { label: "Doctors" }]}
+        actions={
+          <Link
+            href="/admin/staff#invite"
+            className={cn(buttonVariants(), "h-9 rounded-btn font-semibold")}
+          >
+            <UserPlusIcon aria-hidden />
+            Invite a doctor
+          </Link>
+        }
       />
-      <div className="mb-3.5 flex justify-end">
-        <Link
-          href="/admin/staff#invite"
-          className={cn(
-            buttonVariants({ variant: "outline" }),
-            "h-10 rounded-btn",
-          )}
-        >
-          Invite a doctor
-        </Link>
-      </div>
       <DoctorsManager
         clinicId={context.clinic.id}
         doctors={doctors}

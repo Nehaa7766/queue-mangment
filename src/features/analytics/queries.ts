@@ -41,9 +41,9 @@ export async function getDashboardView(
       id: true,
       serviceId: true,
       status: true,
-      service: { select: { name: true } },
+      service: { select: { name: true, tokenPrefix: true } },
     },
-    orderBy: { service: { name: "asc" } },
+    orderBy: { service: { tokenPrefix: "asc" } },
   });
   const queueIds = queues.map((queue) => queue.id);
 
@@ -100,6 +100,7 @@ export async function getDashboardView(
       queueId: queue.id,
       serviceId: queue.serviceId,
       serviceName: queue.service.name,
+      tokenPrefix: queue.service.tokenPrefix,
       status: queue.status,
     })),
     tokens: tokens.map(({ service, ...token }) => ({

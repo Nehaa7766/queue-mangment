@@ -4,7 +4,6 @@ import {
   GET as clinicRoute,
   PATCH as patchClinic,
 } from "@/app/api/platform/clinics/[clinicId]/route";
-import { PUT as putSubscription } from "@/app/api/platform/clinics/[clinicId]/subscription/route";
 import { GET as clinicsRoute } from "@/app/api/platform/clinics/route";
 import { PATCH as patchSettings } from "@/app/api/platform/settings/route";
 import { PATCH as patchTicket } from "@/app/api/platform/support/[ticketId]/route";
@@ -26,7 +25,7 @@ import {
   createdTracker,
 } from "./fixtures";
 
-// Needs the test database migrated and seeded (the "pilot" plan).
+// Needs the test database migrated.
 vi.mock("@/lib/auth/session", () => ({ getSessionUser: vi.fn() }));
 
 const created = createdTracker();
@@ -86,15 +85,6 @@ describe("platform endpoints are for super admins only", () => {
         params({ userId: admin.id }),
       ),
       patchSettings(json("PATCH", { signupsEnabled: false }), {}),
-      putSubscription(
-        json("PUT", {
-          planId: crypto.randomUUID(),
-          status: "ACTIVE",
-          trialEndsAt: null,
-          currentPeriodEnd: null,
-        }),
-        params({ clinicId: target.clinic.id }),
-      ),
     ]);
 
     for (const response of responses) {
@@ -195,62 +185,6 @@ describe("users", () => {
   });
 });
 
-describe("subscriptions", () => {
-  it("creates then updates a subscription, auditing both", async () => {
-    actAs(admin, "SUPER_ADMIN");
-    const plan = await getDb().plan.findUniqueOrThrow({
-      where: { code: "pilot" },
-    });
-
-    const first = await putSubscription(
-      json("PUT", {
-        planId: plan.id,
-        status: "TRIALING",
-        trialEndsAt: "2026-12-31",
-        currentPeriodEnd: null,
-      }),
-      params({ clinicId: target.clinic.id }),
-    );
-    expect(first.status).toBe(200);
-    const second = await putSubscription(
-      json("PUT", {
-        planId: plan.id,
-        status: "ACTIVE",
-        trialEndsAt: null,
-        currentPeriodEnd: "2027-01-31",
-      }),
-      params({ clinicId: target.clinic.id }),
-    );
-    expect((await second.json()).subscription).toMatchObject({
-      status: "ACTIVE",
-      trialEndsAt: null,
-      currentPeriodEnd: "2027-01-31",
-    });
-
-    const subscription = await getDb().subscription.findUniqueOrThrow({
-      where: { clinicId: target.clinic.id },
-    });
-    expect(await auditFor(subscription.id)).toEqual([
-      { action: "subscription.created", actorUserId: admin.id },
-      { action: "subscription.updated", actorUserId: admin.id },
-    ]);
-  });
-
-  it("rejects an unknown plan", async () => {
-    actAs(admin, "SUPER_ADMIN");
-    const response = await putSubscription(
-      json("PUT", {
-        planId: crypto.randomUUID(),
-        status: "ACTIVE",
-        trialEndsAt: null,
-        currentPeriodEnd: null,
-      }),
-      params({ clinicId: target.clinic.id }),
-    );
-    expect(response.status).toBe(400);
-  });
-});
-
 describe("support tickets", () => {
   it("staff open tickets for their clinic; super admins move them along", async () => {
     actAs(target.staff);
@@ -305,7 +239,7 @@ describe("platform settings", () => {
 
     // Same values as before, so other tests sharing the database see no change.
     const response = await patchSettings(
-      json("PATCH", { defaultTrialDays: current.defaultTrialDays }),
+      json("PATCH", { signupsEnabled: current.signupsEnabled }),
       {},
     );
     expect(response.status).toBe(200);

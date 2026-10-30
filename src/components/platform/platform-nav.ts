@@ -1,29 +1,15 @@
 import {
   Building2Icon,
-  ChartColumnIcon,
-  CreditCardIcon,
   LayoutDashboardIcon,
   LifeBuoyIcon,
   ScrollTextIcon,
   SettingsIcon,
   UsersIcon,
-  type LucideIcon,
 } from "lucide-react";
-
-export type PlatformNavItem = {
-  href: string;
-  label: string;
-  // Bottom tab bar label, when shorter than `label`.
-  shortLabel?: string;
-  icon: LucideIcon;
-  // Shown in the phone bottom tab bar. Keep to four.
-  tab?: boolean;
-};
-
-export type PlatformNavGroup = { label: string; items: PlatformNavItem[] };
+import type { NavGroup } from "@/components/shell/types";
 
 // Routes from docs/PLAN.md §12.8 (platform super admin).
-export const PLATFORM_NAV: PlatformNavGroup[] = [
+export const PLATFORM_NAV: NavGroup[] = [
   {
     label: "Main",
     items: [
@@ -40,23 +26,11 @@ export const PLATFORM_NAV: PlatformNavGroup[] = [
         icon: Building2Icon,
         tab: true,
       },
-      { href: "/super-admin/users", label: "Users", icon: UsersIcon },
-    ],
-  },
-  {
-    label: "Billing",
-    items: [
       {
-        href: "/super-admin/subscriptions",
-        label: "Plans and subscriptions",
-        shortLabel: "Plans",
-        icon: CreditCardIcon,
+        href: "/super-admin/users",
+        label: "Users",
+        icon: UsersIcon,
         tab: true,
-      },
-      {
-        href: "/super-admin/billing",
-        label: "Billing overview",
-        icon: ChartColumnIcon,
       },
     ],
   },
@@ -82,10 +56,3 @@ export const PLATFORM_NAV: PlatformNavGroup[] = [
     ],
   },
 ];
-
-export function isPlatformNavActive(
-  item: PlatformNavItem,
-  pathname: string,
-): boolean {
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
-}

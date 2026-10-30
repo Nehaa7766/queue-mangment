@@ -47,7 +47,7 @@ queue-mangment/
 │   │   │   ├── receptionist/       # dashboard, queue, walk-in, history, tokens/[tokenId]
 │   │   │   └── doctor/             # dashboard, queue, consultation, history, availability
 │   │   ├── (clinic-admin)/admin/   # dashboard, services, doctors, staff, roles, settings, qr-code (+ poster), analytics, audit
-│   │   ├── (platform-admin)/super-admin/  # dashboard, clinics, users, subscriptions, billing, activity, support, settings
+│   │   ├── (platform-admin)/super-admin/  # dashboard (analytics), clinics, users, plans, subscriptions, billing, activity, support, settings — with create/edit/delete
 │   │   ├── (onboarding)/           # signup (+ pending), support tickets for clinic staff
 │   │   └── api/
 │   │       ├── health/             # GET /api/health; outbox counts only with the job token
@@ -59,21 +59,23 @@ queue-mangment/
 │   │       ├── clinics/[clinicId]/ # queues/today, dashboard, and the admin APIs (services, staff, members, doctors, settings, holidays, invitations, analytics, audit)
 │   │       ├── services/[serviceId]/       # edit or disable one service
 │   │       ├── invitations/[token]/accept/ # accept a staff invitation
-│   │       ├── platform/           # super admin APIs
+│   │       ├── platform/           # super admin APIs: clinics (+ slug check, subscription), users (+ password reset), plans, support tickets, settings, activity
 │   │       ├── onboarding/         # signup, slug availability
 │   │       ├── support/tickets/    # tickets from clinic staff
 │   │       └── internal/           # outbox/process, retention/run (bearer INTERNAL_JOB_SECRET)
 │   ├── components/
 │   │   ├── ui/                     # shadcn/ui primitives
-│   │   ├── layout/                 # staff shell, sidebar, icon rail, bottom tabs, header; staff-nav.ts holds every staff menu
-│   │   ├── queue/                  # reception: now serving ticket, mini ticket rows, KPI card, live queue, walk-in form
-│   │   ├── charts/                 # Recharts: queue flow line, waiting-by-service donut
+│   │   ├── shell/                  # SHARED app shell for every signed-in panel: AppShell, sidebar + drawer, top bar, PageHeader strip, help card
+│   │   ├── dashboard/              # SHARED dashboard blocks: StatCard, DashboardCard + StatStrip, HighlightCard, SparkCard (+ client Sparkline), ListRow, tone.ts
+│   │   ├── layout/                 # staff wiring of the shell: StaffShell, StaffChrome, bottom tabs, account menu, BrandMark + BrandName; staff-nav.ts holds every staff menu
+│   │   ├── queue/                  # reception: now serving ticket, up-next rows, status pills, live queue, walk-in form
+│   │   ├── charts/                 # Recharts: reception queue flow (joined/served bars, average-wait line)
 │   │   ├── patient/                # patient screens, ticket hero, join form; messages.ts holds all patient text
 │   │   ├── doctor/                 # doctor screens, availability form, break and delay banners
 │   │   ├── admin/                  # admin managers and forms, opening hours editor, QR actions
-│   │   ├── platform/               # super admin shell and controls
+│   │   ├── platform/               # super admin: platform-chrome.tsx (wires AppShell), form-kit.tsx (form fields + dialogs), delete-button.tsx (type-to-confirm), *-forms.tsx, data-table, ListCard (section-card.tsx), range tabs, charts/
 │   │   ├── onboarding/             # signup wizard, support ticket form
-│   │   └── auth/                   # login, forgot and reset password forms, sign-out button
+│   │   └── auth/                   # login ticket (login-ticket.tsx, ticket-meta.tsx, login-form.tsx), forgot and reset password forms, auth-shell, sign-out button
 │   ├── features/                   # domain modules; business rules live here
 │   │   ├── queue/
 │   │   │   ├── contracts.ts        # SHARED: API paths and request/response shapes for queue screens
@@ -144,6 +146,7 @@ root. All other Markdown documentation goes in `docs/`.
 | A new email or outbox event | `src/features/notifications/events.ts` | Add the type and payload, write it with `enqueueOutboxEvent()` in the same transaction, then handle it in `outbox-worker.ts`. |
 | Other business rules or queries | `src/features/<module>/` | Get the client with `getDb()` from `src/lib/db`. Record staff changes with `recordAudit()`. |
 | A staff menu link | `src/components/layout/staff-nav.ts` | Set `tab: true` to show it in the phone tab bar (keep to four per role). |
+| A dashboard card, chart card or KPI | `src/components/dashboard/` | Reuse StatCard, DashboardCard, HighlightCard, SparkCard. Keep charts in small client components; cards that take an icon component must stay server components, because functions can't be passed from a server page to a client component. |
 | A reusable UI piece | `src/components/<area>/` | shadcn/ui primitives in `ui/`; QueueCare pieces by area. |
 | A component used by one page only | Next to that page | Move it to `src/components/` once a second page needs it. |
 | A new error type | `src/lib/errors/app-error.ts` | Add a stable code and its HTTP status to `ERROR_STATUS`. |

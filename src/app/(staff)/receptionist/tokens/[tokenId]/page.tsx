@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { z } from "zod";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   RECEPTION_ROLES,
@@ -45,15 +46,20 @@ async function TokenDetails({ params }: { params: Params }) {
     <>
       <PageHeader
         title={`Token ${token.tokenLabel}`}
+        breadcrumbs={[
+          { label: "Reception", href: "/receptionist" },
+          { label: "Queue history", href: "/receptionist/history" },
+          { label: `Token ${token.tokenLabel}` },
+        ]}
         status={`${token.serviceName} · ${token.queueDate}`}
       />
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section
           aria-labelledby="token-summary"
-          className="flex flex-col overflow-hidden rounded-card border border-border bg-card sm:flex-row"
+          className="flex flex-col self-start overflow-hidden rounded-card border border-border bg-card shadow-card sm:flex-row"
         >
-          <div className="flex flex-col justify-center gap-1 border-b-2 border-dashed border-background bg-slate px-6 py-5 text-white sm:w-44 sm:border-r-2 sm:border-b-0">
-            <span className="text-[11px] font-semibold tracking-[0.08em] text-slate-muted uppercase">
+          <div className="flex flex-col justify-center gap-1 border-b-2 border-dashed border-background bg-brand px-6 py-5 text-white sm:w-44 sm:border-r-2 sm:border-b-0">
+            <span className="text-[11px] font-semibold tracking-[0.08em] text-brand-muted uppercase">
               Token
             </span>
             <span className="font-display text-5xl font-extrabold tabular-nums">
@@ -127,31 +133,32 @@ async function TokenDetails({ params }: { params: Params }) {
           </div>
         </section>
 
-        <section
-          aria-labelledby="timeline-title"
-          className="rounded-card border border-border bg-card p-5"
+        <DashboardCard
+          title="Timeline"
+          description="Every recorded step, oldest first"
         >
-          <h2
-            id="timeline-title"
-            className="mb-3 font-display text-base font-bold"
-          >
-            Timeline
-          </h2>
           {timeline.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               No recorded actions for this token.
             </p>
           ) : (
-            <ol className="flex flex-col gap-3">
-              {timeline.map((event) => (
+            <ol className="flex flex-col">
+              {timeline.map((event, index) => (
                 <li key={event.id} className="flex gap-3">
                   <time
                     dateTime={event.createdAt}
-                    className="w-12 shrink-0 text-xs text-muted-foreground tabular-nums"
+                    className="w-12 shrink-0 pt-0.5 text-xs text-muted-foreground tabular-nums"
                   >
                     {event.time}
                   </time>
-                  <div>
+                  {/* Dot and connecting line, like a vertical timeline. */}
+                  <span aria-hidden className="flex flex-col items-center">
+                    <span className="mt-1 size-2.5 shrink-0 rounded-full bg-brand" />
+                    {index < timeline.length - 1 && (
+                      <span className="w-px flex-1 bg-border" />
+                    )}
+                  </span>
+                  <div className="pb-4">
                     <p className="text-sm font-semibold">{event.title}</p>
                     {event.actorName && (
                       <p className="text-xs text-muted-foreground">
@@ -163,7 +170,7 @@ async function TokenDetails({ params }: { params: Params }) {
               ))}
             </ol>
           )}
-        </section>
+        </DashboardCard>
       </div>
     </>
   );
@@ -171,9 +178,9 @@ async function TokenDetails({ params }: { params: Params }) {
 
 function TokenSkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4">
-      <Skeleton className="h-8 w-40" />
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Skeleton className="h-14 rounded-none" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Skeleton className="h-56 rounded-card" />
         <Skeleton className="h-56 rounded-card" />
       </div>

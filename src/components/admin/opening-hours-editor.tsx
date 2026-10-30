@@ -183,7 +183,7 @@ export function OpeningHoursEditor({
                         <Button
                           type="button"
                           variant="ghost"
-                          className="h-9 rounded-btn px-2 text-slate"
+                          className="h-9 rounded-btn px-2 text-brand"
                           onClick={() =>
                             updateDay(day, (current) => ({
                               ...current,

@@ -7,7 +7,7 @@ import { messages } from "./messages";
 const TOKEN_STYLES: Record<TokenStatus, string> = {
   WAITING: "bg-status-wait text-status-wait-foreground",
   CALLED: "bg-status-wait text-status-wait-foreground",
-  IN_SERVICE: "bg-slate text-white",
+  IN_SERVICE: "bg-brand text-white",
   COMPLETED: "bg-status-done text-status-done-foreground",
   SKIPPED: "bg-status-miss text-status-miss-foreground",
   CANCELLED: "bg-status-off text-status-off-foreground",
@@ -19,8 +19,9 @@ const QUEUE_STYLES: Record<QueueStatus, string> = {
   CLOSED: "bg-status-off text-status-off-foreground",
 };
 
-const PILL =
-  "inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold";
+// Rounded pill with a small dot in the text colour before the label.
+export const PILL =
+  "inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold before:size-1.5 before:shrink-0 before:rounded-full before:bg-current";
 
 export function TokenStatusPill({ status }: { status: TokenStatus }) {
   return (

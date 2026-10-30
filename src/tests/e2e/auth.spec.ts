@@ -23,7 +23,7 @@ test("staff sign in and land on their role's home page", async ({
 
   await page.getByLabel("Email").fill(RECEPTION_EMAIL);
   await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Open my counter" }).click();
 
   await expect(page).toHaveURL(/\/receptionist$/);
 });
@@ -36,7 +36,7 @@ test("a wrong password shows an error and stays on sign-in", async ({
 
   await page.getByLabel("Email").fill(RECEPTION_EMAIL);
   await page.getByLabel("Password").fill("not-the-password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Open my counter" }).click();
 
   await expect(page.getByText("Email or password is incorrect.")).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
@@ -45,7 +45,7 @@ test("a wrong password shows an error and stays on sign-in", async ({
 test("empty fields show inline errors", async ({ page }) => {
   await page.goto("/login");
 
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Open my counter" }).click();
 
   await expect(page.getByText("Enter a valid email address.")).toBeVisible();
   await expect(page.getByText("Enter your password.")).toBeVisible();

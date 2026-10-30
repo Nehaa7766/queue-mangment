@@ -19,41 +19,37 @@ describe("parsePlatformSettings", () => {
 
   it("reads stored values", () => {
     expect(
-      parsePlatformSettings([
-        { key: "signupsEnabled", value: false },
-        { key: "defaultTrialDays", value: 14 },
-      ]),
-    ).toEqual({ signupsEnabled: false, defaultTrialDays: 14 });
+      parsePlatformSettings([{ key: "signupsEnabled", value: false }]),
+    ).toEqual({ signupsEnabled: false });
   });
 
   it("falls back to the default for an invalid value", () => {
     expect(
+      parsePlatformSettings([{ key: "signupsEnabled", value: "no" }]),
+    ).toEqual(DEFAULT_PLATFORM_SETTINGS);
+  });
+
+  // Rows for removed settings (the trial length) stay in the table, unread.
+  it("ignores keys it doesn't know", () => {
+    expect(
       parsePlatformSettings([
-        { key: "signupsEnabled", value: "no" },
-        { key: "defaultTrialDays", value: 1000 },
+        { key: "theme", value: "dark" },
+        { key: "defaultTrialDays", value: 14 },
       ]),
     ).toEqual(DEFAULT_PLATFORM_SETTINGS);
   });
 
-  it("ignores keys it doesn't know", () => {
-    expect(parsePlatformSettings([{ key: "theme", value: "dark" }])).toEqual(
-      DEFAULT_PLATFORM_SETTINGS,
-    );
-  });
-
   it("lists every known key", () => {
-    expect([...PLATFORM_SETTING_KEYS].sort()).toEqual([
-      "defaultTrialDays",
-      "signupsEnabled",
-    ]);
+    expect([...PLATFORM_SETTING_KEYS]).toEqual(["signupsEnabled"]);
   });
 });
 
 describe("platformSettingsUpdateSchema", () => {
   it("accepts any subset of the settings", () => {
+    expect(platformSettingsUpdateSchema.parse({})).toEqual({});
     expect(
-      platformSettingsUpdateSchema.parse({ defaultTrialDays: 30 }),
-    ).toEqual({ defaultTrialDays: 30 });
+      platformSettingsUpdateSchema.parse({ signupsEnabled: false }),
+    ).toEqual({ signupsEnabled: false });
   });
 
   it("rejects unknown keys and bad values", () => {
@@ -61,10 +57,10 @@ describe("platformSettingsUpdateSchema", () => {
       platformSettingsUpdateSchema.safeParse({ theme: "dark" }).success,
     ).toBe(false);
     expect(
-      platformSettingsUpdateSchema.safeParse({ defaultTrialDays: 2.5 }).success,
+      platformSettingsUpdateSchema.safeParse({ defaultTrialDays: 30 }).success,
     ).toBe(false);
     expect(
-      platformSettingsUpdateSchema.safeParse({ defaultTrialDays: -1 }).success,
+      platformSettingsUpdateSchema.safeParse({ signupsEnabled: "yes" }).success,
     ).toBe(false);
   });
 });

@@ -10,7 +10,11 @@ import { authClient } from "@/lib/auth/client";
 export function SignOutButton({
   variant = "outline",
   className,
-}: Pick<ComponentProps<typeof Button>, "variant" | "className">) {
+  iconOnly = false,
+}: Pick<ComponentProps<typeof Button>, "variant" | "className"> & {
+  // For the collapsed sidebar: the label stays for screen readers and as a tooltip.
+  iconOnly?: boolean;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -32,10 +36,13 @@ export function SignOutButton({
       variant={variant}
       disabled={pending}
       onClick={handleSignOut}
+      title={iconOnly ? "Sign out" : undefined}
       className={className}
     >
       <LogOut aria-hidden="true" />
-      {pending ? "Signing out…" : "Sign out"}
+      <span className={iconOnly ? "sr-only" : undefined}>
+        {pending ? "Signing out…" : "Sign out"}
+      </span>
     </Button>
   );
 }

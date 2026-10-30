@@ -38,49 +38,58 @@ async function Settings() {
       <PageHeader
         title="Clinic settings"
         status="Changes apply straight away."
-        search={false}
+        breadcrumbs={[{ label: "Clinic setup" }, { label: "Clinic settings" }]}
       />
-      <div className="flex flex-col gap-3.5">
-        <AdminSection id="profile" title="Clinic profile">
-          <ClinicProfileForm
-            clinicId={settings.id}
-            slug={settings.slug}
-            initial={{
-              name: settings.name,
-              address: settings.address,
-              phone: settings.phone,
-              timezone: settings.timezone,
-            }}
-          />
-        </AdminSection>
-        <AdminSection
-          id="hours"
-          title="Opening hours"
-          description={`In ${settings.timezone.replaceAll("_", " ")} time. Patients can join only while the clinic is open.`}
-        >
-          <OpeningHoursEditor
-            clinicId={settings.id}
-            initial={settings.openingHours}
-          />
-        </AdminSection>
-        <AdminSection
-          id="holidays"
-          title="Holidays"
-          description="The clinic is closed all day on these dates."
-        >
-          <HolidaysManager
-            clinicId={settings.id}
-            holidays={holidays}
-            today={today}
-          />
-        </AdminSection>
-        <AdminSection
-          id="queue"
-          title="Queue rules"
-          description="Reception sees these on the live queue."
-        >
-          <QueueSettingsForm clinicId={settings.id} initial={settings.queue} />
-        </AdminSection>
+      {/* Two columns on wide screens: profile and hours on the left, queue
+          rules and holidays on the right. */}
+      <div className="grid items-start gap-5 xl:grid-cols-2">
+        <div className="flex flex-col gap-5">
+          <AdminSection id="profile" title="Clinic profile">
+            <ClinicProfileForm
+              clinicId={settings.id}
+              slug={settings.slug}
+              initial={{
+                name: settings.name,
+                address: settings.address,
+                phone: settings.phone,
+                timezone: settings.timezone,
+              }}
+            />
+          </AdminSection>
+          <AdminSection
+            id="hours"
+            title="Opening hours"
+            description={`In ${settings.timezone.replaceAll("_", " ")} time. Patients can join only while the clinic is open.`}
+          >
+            <OpeningHoursEditor
+              clinicId={settings.id}
+              initial={settings.openingHours}
+            />
+          </AdminSection>
+        </div>
+        <div className="flex flex-col gap-5">
+          <AdminSection
+            id="queue"
+            title="Queue rules"
+            description="Reception sees these on the live queue."
+          >
+            <QueueSettingsForm
+              clinicId={settings.id}
+              initial={settings.queue}
+            />
+          </AdminSection>
+          <AdminSection
+            id="holidays"
+            title="Holidays"
+            description="The clinic is closed all day on these dates."
+          >
+            <HolidaysManager
+              clinicId={settings.id}
+              holidays={holidays}
+              today={today}
+            />
+          </AdminSection>
+        </div>
       </div>
     </>
   );

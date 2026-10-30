@@ -48,13 +48,13 @@ function layout(options: {
   const paragraphs = options.paragraphs
     .map(
       (text) =>
-        `<p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#2A2D34">${escapeHtml(text)}</p>`,
+        `<p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#2E2522">${escapeHtml(text)}</p>`,
     )
     .join("");
   const footer = options.footer
     .map(
       (text) =>
-        `<p style="margin:0 0 8px;font-size:14px;line-height:1.5;color:#5F5A57">${escapeHtml(text)}</p>`,
+        `<p style="margin:0 0 8px;font-size:14px;line-height:1.5;color:#6E625C">${escapeHtml(text)}</p>`,
     )
     .join("");
   const url = escapeHtml(options.actionUrl);
@@ -62,13 +62,13 @@ function layout(options: {
   return `<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(options.heading)}</title></head>
-<body style="margin:0;padding:24px 16px;background:#FBF7EC;font-family:Inter,Arial,Helvetica,sans-serif">
-<div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid #E9E2D0;border-radius:12px;padding:24px">
-<p style="margin:0 0 20px;font-size:14px;font-weight:700;color:#475C6C">QueueCare</p>
-<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#2A2D34">${escapeHtml(options.heading)}</h1>
+<body style="margin:0;padding:24px 16px;background:#F2EDEA;font-family:Inter,Arial,Helvetica,sans-serif">
+<div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid #E8DFDB;border-radius:12px;padding:24px">
+<p style="margin:0 0 20px;font-size:14px;font-weight:700;color:#86614F">QueueCare</p>
+<h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#2E2522">${escapeHtml(options.heading)}</h1>
 ${paragraphs}
-<p style="margin:24px 0"><a href="${url}" style="display:inline-block;background:#CD8B62;color:#2A2D34;font-weight:600;font-size:16px;text-decoration:none;padding:12px 20px;border-radius:10px">${escapeHtml(options.actionLabel)}</a></p>
-<p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:#5F5A57">If the button doesn't work, copy this link into your browser:<br><a href="${url}" style="color:#475C6C;word-break:break-all">${url}</a></p>
+<p style="margin:24px 0"><a href="${url}" style="display:inline-block;background:#86614F;color:#FFFFFF;font-weight:600;font-size:16px;text-decoration:none;padding:12px 20px;border-radius:10px">${escapeHtml(options.actionLabel)}</a></p>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.5;color:#6E625C">If the button doesn't work, copy this link into your browser:<br><a href="${url}" style="color:#86614F;word-break:break-all">${url}</a></p>
 ${footer}
 </div>
 </body>

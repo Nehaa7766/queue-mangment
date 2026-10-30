@@ -4,6 +4,7 @@ import { PauseIcon, PlayIcon, UserPlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { QueueDoctorBanner } from "@/components/doctor/doctor-notice";
 import {
   AlertDialog,
@@ -193,7 +194,7 @@ export function LiveQueue({
   const secondsSinceSync = Math.max(0, Math.round((now - lastSynced) / 1000));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {queues.length > 1 && (
         <nav aria-label="Services" className="flex flex-wrap gap-2">
           {queues.map((queue) => {
@@ -206,7 +207,7 @@ export function LiveQueue({
                 className={cn(
                   "inline-flex min-h-10 items-center gap-2 rounded-btn border px-3.5 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                   active
-                    ? "border-slate bg-slate text-white"
+                    ? "border-brand bg-brand text-white"
                     : "border-border bg-card hover:bg-accent",
                 )}
               >
@@ -217,9 +218,7 @@ export function LiveQueue({
                 <span
                   className={cn(
                     "rounded-full px-1.5 text-xs font-semibold tabular-nums",
-                    active
-                      ? "bg-sand text-charcoal"
-                      : "bg-terracotta text-charcoal",
+                    active ? "bg-white text-brand" : "bg-brand-tint text-brand",
                   )}
                 >
                   {active ? view.queue.waitingCount : queue.waitingCount}
@@ -230,7 +229,7 @@ export function LiveQueue({
         </nav>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-card border border-border bg-card px-4 py-3 shadow-card">
         <QueueStatusPill status={view.queue.status} />
         <span className="text-xs text-muted-foreground tabular-nums">
           {view.queue.serviceName} · {view.queue.waitingCount} waiting · updated{" "}
@@ -303,7 +302,7 @@ export function LiveQueue({
                 onClick={() => void run({ type: "callNext" })}
               >
                 Call next
-                <kbd className="ml-1 hidden rounded border border-charcoal/30 px-1.5 text-xs font-medium sm:inline">
+                <kbd className="ml-1 hidden rounded border border-white/40 px-1.5 text-xs font-medium sm:inline">
                   N
                 </kbd>
               </Button>
@@ -345,16 +344,10 @@ export function LiveQueue({
       />
 
       {others.length > 0 && (
-        <section
-          aria-labelledby="also-called"
-          className="rounded-card border border-border bg-card p-4"
+        <DashboardCard
+          title="Also called or with a doctor"
+          bodyClassName="px-5 py-1"
         >
-          <h2
-            id="also-called"
-            className="mb-2 text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-          >
-            Also called or with a doctor
-          </h2>
           <ul className="flex flex-col divide-y divide-divider">
             {others.map((token) => (
               <li
@@ -395,19 +388,16 @@ export function LiveQueue({
               </li>
             ))}
           </ul>
-        </section>
+        </DashboardCard>
       )}
 
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <section aria-labelledby="up-next" className="flex flex-col gap-2">
-          <h2
-            id="up-next"
-            className="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-          >
-            Up next · {view.waiting.length}
-          </h2>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <DashboardCard
+          title={`Up next · ${view.waiting.length}`}
+          description="In queue order. Open a row for the token's details."
+        >
           {view.waiting.length === 0 ? (
-            <p className="rounded-card border border-dashed border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               No one is waiting. New patients appear here as they join.
             </p>
           ) : (
@@ -424,21 +414,15 @@ export function LiveQueue({
               ))}
             </ol>
           )}
-        </section>
+        </DashboardCard>
 
-        <section aria-labelledby="recent" className="flex flex-col gap-2">
-          <h2
-            id="recent"
-            className="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-          >
-            Recently finished
-          </h2>
+        <DashboardCard title="Recently finished" bodyClassName="px-5 py-1">
           {view.recent.length === 0 ? (
-            <p className="rounded-card border border-dashed border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
+            <p className="py-6 text-center text-sm text-muted-foreground">
               Finished, skipped and cancelled tokens show here.
             </p>
           ) : (
-            <ul className="flex flex-col divide-y divide-divider rounded-card border border-border bg-card px-4">
+            <ul className="flex flex-col divide-y divide-divider">
               {view.recent.map((token) => (
                 <li key={token.id} className="flex items-center gap-3 py-2.5">
                   <span className="font-display font-extrabold tabular-nums">
@@ -465,7 +449,7 @@ export function LiveQueue({
               ))}
             </ul>
           )}
-        </section>
+        </DashboardCard>
       </div>
 
       <AlertDialog

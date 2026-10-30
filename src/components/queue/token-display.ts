@@ -15,7 +15,7 @@ export const TOKEN_STATUS_DISPLAY: Record<
 > = {
   WAITING: { label: "Waiting", className: WAIT },
   CALLED: { label: "Called", className: WAIT },
-  IN_SERVICE: { label: "In consultation", className: "bg-slate text-white" },
+  IN_SERVICE: { label: "In consultation", className: "bg-brand text-white" },
   COMPLETED: { label: "Done", className: DONE },
   SKIPPED: { label: "No-show", className: MISS },
   CANCELLED: { label: "Cancelled", className: OFF },
@@ -34,9 +34,14 @@ export function minutesSince(iso: string, now: number): number {
   return Math.max(0, Math.floor((now - Date.parse(iso)) / 60_000));
 }
 
-// "1:42" for elapsed or remaining seconds.
+// "1:42" for elapsed or remaining seconds; "2h 05m" from an hour up, where
+// "125:00" would be hard to read.
 export function formatClock(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
+  if (seconds >= 3600) {
+    const minutes = Math.floor(seconds / 60);
+    return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+  }
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 

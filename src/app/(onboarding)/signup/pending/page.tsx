@@ -12,11 +12,11 @@ export default function SignupPendingPage({
   return (
     <section
       aria-live="polite"
-      className="flex flex-col gap-4 rounded-card border border-border bg-card p-6"
+      className="flex flex-col gap-4 rounded-card border border-border bg-card p-6 shadow-card sm:p-8"
     >
       <span
         aria-hidden
-        className="flex size-[38px] items-center justify-center rounded-[10px] bg-cream text-slate"
+        className="flex size-12 items-center justify-center rounded-full bg-brand-tint text-brand"
       >
         <HourglassIcon className="size-5" />
       </span>
@@ -32,7 +32,6 @@ export default function SignupPendingPage({
           Until then you can sign in, but the clinic screens and the patient
           page stay off.
         </li>
-        <li>Your trial starts today on the Pilot plan.</li>
       </ul>
       <div>
         <Link

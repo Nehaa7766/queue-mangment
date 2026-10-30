@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheckIcon } from "lucide-react";
+import { CheckIcon, CircleCheckIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { errorMessage, requestJson } from "@/components/platform/request";
@@ -214,36 +214,60 @@ export function SignupWizard() {
 
   return (
     <div className="flex flex-col gap-5">
-      <ol className="flex gap-2" aria-label="Sign-up steps">
-        {SIGNUP_STEPS.map((s, index) => (
-          <li
-            key={s.title}
-            aria-current={index === step ? "step" : undefined}
-            className={cn(
-              "flex flex-1 flex-col gap-1.5 text-xs font-medium",
-              index <= step ? "text-foreground" : "text-muted-foreground",
-            )}
-          >
-            <span
-              aria-hidden
-              className={cn(
-                "h-1.5 rounded-full",
-                index <= step ? "bg-terracotta" : "bg-divider",
+      <ol
+        className="flex items-center gap-2 rounded-card border border-border bg-card p-4 shadow-card sm:gap-3 sm:p-5"
+        aria-label="Sign-up steps"
+      >
+        {SIGNUP_STEPS.map((s, index) => {
+          const done = index < step;
+          const current = index === step;
+          return (
+            <li
+              key={s.title}
+              aria-current={current ? "step" : undefined}
+              className="flex flex-1 items-center gap-2"
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                  done && "bg-brand text-white",
+                  current && "border-2 border-brand text-brand",
+                  !done &&
+                    !current &&
+                    "border border-border text-muted-foreground",
+                )}
+              >
+                {done ? <CheckIcon className="size-4" /> : index + 1}
+              </span>
+              <span
+                className={cn(
+                  "min-w-0 text-xs font-medium sm:text-sm",
+                  index <= step ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                <span className="sr-only">Step {index + 1}: </span>
+                {s.title}
+              </span>
+              {index < SIGNUP_STEPS.length - 1 && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "hidden h-0.5 min-w-4 flex-1 rounded-full sm:block",
+                    done ? "bg-brand" : "bg-divider",
+                  )}
+                />
               )}
-            />
-            <span>
-              <span className="sr-only">Step {index + 1}: </span>
-              {s.title}
-            </span>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ol>
 
       <form
         method="post"
         noValidate
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-card border border-border bg-card p-5 md:p-6"
+        className="flex flex-col gap-4 rounded-card border border-border bg-card p-5 shadow-card md:p-6"
       >
         <h2
           ref={headingRef}
@@ -287,7 +311,7 @@ export function SignupWizard() {
                   </span>
                 )}
                 {slugCheck.state === "taken" && !errors.clinicSlug && (
-                  <span className="font-medium text-terracotta-text">
+                  <span className="font-medium text-danger-text">
                     {slugCheck.reason}
                   </span>
                 )}

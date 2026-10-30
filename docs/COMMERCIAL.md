@@ -1,5 +1,13 @@
 # Commercialization (Phase 10)
 
+> **Billing UI removed (2026-10-30, owner's decision).** The Plans,
+> Subscriptions and Billing overview screens, their API routes, the trial
+> length setting and the dashboard revenue cards are gone. New clinics (added
+> by a super admin or through `/signup`) no longer get a plan or a trial.
+> The `plans` and `subscriptions` tables stay in the schema, unused, so
+> billing can come back later without a migration. The rest of this document
+> describes that later work.
+
 What the platform side of QueueCare does today, what it deliberately does
 not do yet, and the decisions needed before charging clinics. PHASES.md
 Phase 10 says to start this work only after the pilot meets its success
@@ -9,17 +17,14 @@ criteria; the code below is ready for that moment, not a reason to skip it.
 
 | Area | Where | Notes |
 |---|---|---|
-| Super admin panel | `/super-admin/*` | Dashboard, clinics, users, plans and subscriptions, billing overview, activity log, support, platform settings. Super admins only. |
+| Super admin panel | `/super-admin/*` | Dashboard, clinics, users (clinic admins and staff), activity log, support, platform settings. Super admins only. |
 | Clinic approval | `/super-admin/clinics`, dashboard | New sign-ups wait as **Pending approval** until a super admin approves them. Active clinics can be **suspended**: staff lose access and the public queue page goes offline. Nothing is deleted. |
 | Self-service sign-up | `/signup` | Three steps: clinic (name, public address, time zone), first service, admin account. Creates everything in one transaction. Rate-limited per client address. |
-| Subscriptions | `/super-admin/subscriptions` | Plan, status (Trial, Active, Past due, Cancelled), trial end and period end, all set by hand. |
-| Billing overview | `/super-admin/billing` | Monthly recurring revenue, revenue at risk and trial pipeline, computed from plans. **Not money received.** |
 | Support | `/support` (clinic staff), `/super-admin/support` | Staff open tickets for their clinic; super admins move them Open → In progress → Resolved. |
-| Platform settings | `/super-admin/settings` | `signupsEnabled` (switch public sign-up off) and `defaultTrialDays` (trial length for new sign-ups, 90 by default). |
+| Platform settings | `/super-admin/settings` | `signupsEnabled` (switch public sign-up off). |
 | Audit | `platform_audit_events`, `/super-admin/activity` | Every super admin change and every sign-up is recorded with who did it. |
 
-Seed data: one plan, **Pilot** (`pilot`, ₹0), and the demo clinic on a 90-day
-trial. Self-service sign-ups always start on `pilot`.
+Seed data: no plans or subscriptions since the billing UI was removed.
 
 ## What is not built yet
 

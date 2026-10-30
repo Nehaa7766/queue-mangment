@@ -124,7 +124,7 @@ export function AvailabilityForm({
                 className={cn(
                   "flex min-h-14 cursor-pointer flex-col gap-0.5 rounded-btn border px-4 py-3 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                   checked
-                    ? "border-slate bg-slate text-white"
+                    ? "border-brand bg-brand text-white"
                     : "border-border bg-card hover:bg-accent",
                 )}
               >
@@ -140,7 +140,7 @@ export function AvailabilityForm({
                 <span
                   className={cn(
                     "text-xs",
-                    checked ? "text-slate-muted" : "text-muted-foreground",
+                    checked ? "text-brand-muted" : "text-muted-foreground",
                   )}
                 >
                   {display.description}
@@ -174,7 +174,8 @@ export function AvailabilityForm({
                 aria-pressed={delay === String(minutes)}
                 className={cn(
                   "h-11 rounded-btn px-3.5",
-                  delay === String(minutes) && "border-slate bg-slate-tint",
+                  delay === String(minutes) &&
+                    "border-brand bg-brand-tint text-brand hover:bg-brand-tint",
                 )}
                 onClick={() => setDelay(String(minutes))}
               >

@@ -24,7 +24,7 @@ test("clinic admin adds a service patients can see, then changes the grace perio
   await page.goto("/login");
   await page.getByLabel("Email").fill(EMAIL);
   await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Open my counter" }).click();
   await expect(page).toHaveURL(/\/admin\/dashboard$/);
   await expect(
     page.getByRole("heading", { name: "Admin dashboard" }),

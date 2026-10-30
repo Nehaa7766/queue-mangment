@@ -94,3 +94,51 @@ describe("applyResult", () => {
     expect(next.current).toBeNull();
   });
 });
+
+describe("the complete patient lists", () => {
+  it("adds a started patient to In consultation", () => {
+    const next = applyOptimistic(
+      panelView(),
+      { type: "start", tokenId: "17" },
+      NOW_ISO,
+    );
+
+    expect(next.inService.map((t) => t.id)).toEqual(["17"]);
+  });
+
+  it("moves a completed patient to the top of Done today", () => {
+    const current = staffToken({ id: "16", status: "IN_SERVICE" });
+    const earlier = staffToken({ id: "12", status: "COMPLETED" });
+    const view = panelView({
+      current,
+      inService: [current],
+      completedToday: [earlier],
+    });
+
+    const next = applyOptimistic(
+      view,
+      { type: "complete", tokenId: "16" },
+      NOW_ISO,
+    );
+
+    expect(next.inService).toEqual([]);
+    expect(next.completedToday.map((t) => t.id)).toEqual(["16", "12"]);
+    expect(next.completedToday[0]).toMatchObject({
+      status: "COMPLETED",
+      completedAt: NOW_ISO,
+    });
+  });
+
+  it("uses the server's token once a complete succeeds", () => {
+    const current = staffToken({ id: "16", status: "IN_SERVICE" });
+    const done = staffToken({ id: "16", status: "COMPLETED" });
+
+    const next = applyResult(
+      panelView({ current, inService: [current] }),
+      done,
+    );
+
+    expect(next.inService).toEqual([]);
+    expect(next.completedToday).toEqual([done]);
+  });
+});

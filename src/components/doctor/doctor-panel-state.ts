@@ -17,6 +17,23 @@ export function startBlockedReason(
   return null;
 }
 
+function without(
+  tokens: readonly StaffTokenView[],
+  id: string,
+): StaffTokenView[] {
+  return tokens.filter((token) => token.id !== id);
+}
+
+// In consultation: earliest start first, like the server's order.
+function withInService(
+  tokens: readonly StaffTokenView[],
+  token: StaffTokenView,
+): StaffTokenView[] {
+  return [...without(tokens, token.id), token].sort((a, b) =>
+    (a.serviceStartedAt ?? "").localeCompare(b.serviceStartedAt ?? ""),
+  );
+}
+
 export function applyOptimistic(
   view: DoctorPanelView,
   action: DoctorAction,
@@ -25,19 +42,32 @@ export function applyOptimistic(
   if (action.type === "start") {
     const token = view.called.find((t) => t.id === action.tokenId);
     if (!token) return view;
+    const started: StaffTokenView = {
+      ...token,
+      status: "IN_SERVICE",
+      serviceStartedAt: nowIso,
+      assignedDoctorName: view.doctor.name,
+    };
     return {
       ...view,
-      current: {
-        ...token,
-        status: "IN_SERVICE",
-        serviceStartedAt: nowIso,
-        assignedDoctorName: view.doctor.name,
-      },
-      called: view.called.filter((t) => t.id !== action.tokenId),
+      current: started,
+      called: without(view.called, action.tokenId),
+      inService: withInService(view.inService, started),
     };
   }
   if (view.current?.id !== action.tokenId) return view;
-  return { ...view, current: null, seenToday: view.seenToday + 1 };
+  const done: StaffTokenView = {
+    ...view.current,
+    status: "COMPLETED",
+    completedAt: nowIso,
+  };
+  return {
+    ...view,
+    current: null,
+    inService: without(view.inService, action.tokenId),
+    completedToday: [done, ...without(view.completedToday, action.tokenId)],
+    seenToday: view.seenToday + 1,
+  };
 }
 
 // Applies the token the server returned after an action.
@@ -45,13 +75,23 @@ export function applyResult(
   view: DoctorPanelView,
   token: StaffTokenView,
 ): DoctorPanelView {
-  const called = view.called.filter((t) => t.id !== token.id);
+  const called = without(view.called, token.id);
   if (token.status === "IN_SERVICE") {
-    return { ...view, current: token, called };
+    return {
+      ...view,
+      current: token,
+      called,
+      inService: withInService(view.inService, token),
+    };
   }
   return {
     ...view,
     current: view.current?.id === token.id ? null : view.current,
     called,
+    inService: without(view.inService, token.id),
+    completedToday:
+      token.status === "COMPLETED"
+        ? [token, ...without(view.completedToday, token.id)]
+        : view.completedToday,
   };
 }

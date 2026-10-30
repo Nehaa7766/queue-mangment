@@ -2,6 +2,7 @@ import Form from "next/form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { z } from "zod";
+import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { PageHeader } from "@/components/layout/page-header";
 import {
   RECEPTION_ROLES,
@@ -83,7 +84,7 @@ async function History({ searchParams }: { searchParams: SearchParams }) {
       className={cn(
         "inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         active
-          ? "border-slate bg-slate text-white"
+          ? "border-brand bg-brand text-white"
           : "border-border bg-card hover:bg-accent",
       )}
     >
@@ -91,110 +92,165 @@ async function History({ searchParams }: { searchParams: SearchParams }) {
     </Link>
   );
 
+  const time = (iso: string | null) =>
+    iso ? formatClinicTime(iso, timeZone) : "—";
+
   return (
     <>
       <PageHeader
         title="Queue history"
+        breadcrumbs={[
+          { label: "Reception", href: "/receptionist" },
+          { label: "Queue history" },
+        ]}
         status={`Today's tokens · ${history.tokens.length} shown`}
       />
 
-      <div className="mb-4 flex flex-col gap-3 rounded-card border border-border bg-card p-4">
-        <Form
-          action="/receptionist/history"
-          role="search"
-          className="flex gap-2"
-        >
-          {filters.status && (
-            <input type="hidden" name="status" value={filters.status} />
-          )}
-          {filters.serviceId && (
-            <input type="hidden" name="service" value={filters.serviceId} />
-          )}
-          <Input
-            name="q"
-            type="search"
-            defaultValue={filters.search}
-            aria-label="Search by token or patient name"
-            placeholder="Token or patient name"
-            className="h-10 max-w-sm"
-          />
-          <Button type="submit" variant="outline" className="h-10 rounded-btn">
-            Search
-          </Button>
-        </Form>
-        <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
-          {chip("All statuses", href({ status: undefined }), !filters.status)}
-          {HISTORY_STATUSES.map((status) =>
-            chip(
-              TOKEN_STATUS_DISPLAY[status].label,
-              href({ status }),
-              filters.status === status,
-            ),
-          )}
-        </nav>
-        {history.services.length > 1 && (
-          <nav aria-label="Filter by service" className="flex flex-wrap gap-2">
-            {chip(
-              "All services",
-              href({ service: undefined }),
-              !filters.serviceId,
+      <div className="flex flex-col gap-5">
+        <DashboardCard title="Filters" bodyClassName="flex flex-col gap-3">
+          <Form
+            action="/receptionist/history"
+            role="search"
+            className="flex gap-2"
+          >
+            {filters.status && (
+              <input type="hidden" name="status" value={filters.status} />
             )}
-            {history.services.map((service) =>
+            {filters.serviceId && (
+              <input type="hidden" name="service" value={filters.serviceId} />
+            )}
+            <Input
+              name="q"
+              type="search"
+              defaultValue={filters.search}
+              aria-label="Search by token or patient name"
+              placeholder="Token or patient name"
+              className="h-10 max-w-sm"
+            />
+            <Button
+              type="submit"
+              variant="outline"
+              className="h-10 rounded-btn"
+            >
+              Search
+            </Button>
+          </Form>
+          <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
+            {chip("All statuses", href({ status: undefined }), !filters.status)}
+            {HISTORY_STATUSES.map((status) =>
               chip(
-                service.serviceName,
-                href({ service: service.serviceId }),
-                filters.serviceId === service.serviceId,
+                TOKEN_STATUS_DISPLAY[status].label,
+                href({ status }),
+                filters.status === status,
               ),
             )}
           </nav>
-        )}
-      </div>
+          {history.services.length > 1 && (
+            <nav
+              aria-label="Filter by service"
+              className="flex flex-wrap gap-2"
+            >
+              {chip(
+                "All services",
+                href({ service: undefined }),
+                !filters.serviceId,
+              )}
+              {history.services.map((service) =>
+                chip(
+                  service.serviceName,
+                  href({ service: service.serviceId }),
+                  filters.serviceId === service.serviceId,
+                ),
+              )}
+            </nav>
+          )}
+        </DashboardCard>
 
-      {history.tokens.length === 0 ? (
-        <p className="rounded-card border border-dashed border-border bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-          {filters.status || filters.serviceId || filters.search
-            ? "No tokens match these filters."
-            : "No tokens yet today."}
-        </p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-divider rounded-card border border-border bg-card">
-          {history.tokens.map((token) => (
-            <li key={token.id}>
-              <Link
-                href={`/receptionist/tokens/${token.id}`}
-                className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <span className="w-14 font-display text-lg font-extrabold tabular-nums">
-                  {token.tokenLabel}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">
-                    {displayName(token.patientName)}
-                  </span>
-                  <span className="block truncate text-xs text-muted-foreground">
-                    {token.serviceName} · joined{" "}
-                    {formatClinicTime(token.joinedAt, timeZone)}
-                    {token.calledAt &&
-                      ` · called ${formatClinicTime(token.calledAt, timeZone)}`}
-                    {token.completedAt &&
-                      ` · done ${formatClinicTime(token.completedAt, timeZone)}`}
-                  </span>
-                </span>
-                <TokenStatusPill status={token.status} />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+        <DashboardCard
+          title="Today's tokens"
+          description="Newest first. Open a token for its full timeline."
+          bodyClassName="p-0"
+        >
+          {history.tokens.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+              {filters.status || filters.serviceId || filters.search
+                ? "No tokens match these filters."
+                : "No tokens yet today."}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] text-sm">
+                <thead className="bg-muted text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-5 py-2.5 font-semibold">
+                      Token
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">
+                      Patient
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">
+                      Service
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">
+                      Joined
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">
+                      Called
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">
+                      Done
+                    </th>
+                    <th scope="col" className="px-5 py-2.5 font-semibold">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-divider">
+                  {history.tokens.map((token) => (
+                    <tr key={token.id} className="hover:bg-accent/60">
+                      <td className="px-5 py-3">
+                        <Link
+                          href={`/receptionist/tokens/${token.id}`}
+                          className="rounded-sm font-display text-base font-extrabold text-brand tabular-nums outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                        >
+                          {token.tokenLabel}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3 font-medium">
+                        {displayName(token.patientName)}
+                      </td>
+                      <td className="px-3 py-3 text-muted-foreground">
+                        {token.serviceName}
+                      </td>
+                      <td className="px-3 py-3 tabular-nums">
+                        {time(token.joinedAt)}
+                      </td>
+                      <td className="px-3 py-3 tabular-nums">
+                        {time(token.calledAt)}
+                      </td>
+                      <td className="px-3 py-3 tabular-nums">
+                        {time(token.completedAt)}
+                      </td>
+                      <td className="px-5 py-3">
+                        <TokenStatusPill status={token.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DashboardCard>
+      </div>
     </>
   );
 }
 
 function HistorySkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4">
-      <Skeleton className="h-8 w-48" />
-      <Skeleton className="h-28 rounded-card" />
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Skeleton className="h-14 rounded-none" />
+      <Skeleton className="h-36 rounded-card" />
       <Skeleton className="h-80 rounded-card" />
       <span className="sr-only">Loading history…</span>
     </div>

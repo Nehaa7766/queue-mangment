@@ -139,3 +139,63 @@ export function buildAdminAnalytics(input: {
       .sort((a, b) => b.joined - a.joined),
   };
 }
+
+// ---- Admin dashboard ----
+
+export type DashboardService = {
+  serviceId: string;
+  serviceName: string;
+  tokenPrefix: string;
+};
+
+export type AdminDashboardServiceView = DashboardService & {
+  joinedToday: number;
+  completedToday: number;
+  // Patients joined per day over the last 7 days, oldest first.
+  joinedByDay: number[];
+  // Joined today minus joined yesterday.
+  changeVsYesterday: number;
+};
+
+export type AdminDashboardView = {
+  today: AdminAnalyticsView;
+  week: AdminAnalyticsView;
+  month: AdminAnalyticsView;
+  services: AdminDashboardServiceView[];
+};
+
+// Everything the admin dashboard shows, from one month of tokens: today's
+// numbers, the last 7 and 30 days, and a small trend per active service.
+export function buildAdminDashboard(input: {
+  today: string;
+  tokens: readonly AnalyticsToken[];
+  // Active services in display order, including ones with no tokens yet.
+  services: readonly DashboardService[];
+}): AdminDashboardView {
+  const today = buildAdminAnalytics({ ...input, range: "today" });
+  const week = buildAdminAnalytics({ ...input, range: "7d" });
+  const month = buildAdminAnalytics({ ...input, range: "30d" });
+  const yesterday = week.days.at(-2);
+
+  return {
+    today,
+    week,
+    month,
+    services: input.services.map((service) => {
+      const tokens = input.tokens.filter(
+        (token) => token.serviceId === service.serviceId,
+      );
+      const joinedOn = (day: string | undefined) =>
+        tokens.filter((token) => token.queueDate === day).length;
+      const todays = tokens.filter((token) => token.queueDate === input.today);
+      return {
+        ...service,
+        joinedToday: todays.length,
+        completedToday: todays.filter((token) => token.status === "COMPLETED")
+          .length,
+        joinedByDay: week.days.map(joinedOn),
+        changeVsYesterday: todays.length - joinedOn(yesterday),
+      };
+    }),
+  };
+}

@@ -6,9 +6,12 @@ import { getDb } from "@/lib/db";
 import { AppError } from "@/lib/errors/app-error";
 import {
   buildAdminAnalytics,
+  buildAdminDashboard,
   RANGE_DAYS,
   type AdminAnalyticsView,
+  type AdminDashboardView,
   type AnalyticsRange,
+  type AnalyticsToken,
 } from "./admin-analytics";
 import { describeAction, type AuditCategory } from "./audit-log";
 import { clinicDate, clinicTime, toDbDate } from "./clinic-time";
@@ -26,6 +29,7 @@ async function loadClinic(clinicId: string, action: Action) {
       slug: true,
       timezone: true,
       openingHours: true,
+      waitTargetMinutes: true,
     },
   });
   if (!clinic) {
@@ -37,19 +41,18 @@ async function loadClinic(clinicId: string, action: Action) {
 
 // ---- Analytics ----
 
-export async function getAdminAnalytics(
+// Tokens on the clinic's queue days from `firstDay` to `lastDay`.
+async function loadAnalyticsTokens(
   clinicId: string,
-  range: AnalyticsRange,
-  now: Date = new Date(),
-): Promise<AdminAnalyticsView & { clinicName: string; timezone: string }> {
-  const clinic = await loadClinic(clinicId, "analytics.view");
-  const today = clinicDate(now, clinic.timezone);
-  const days = daysEndingOn(today, RANGE_DAYS[range]);
-
+  firstDay: string,
+  lastDay: string,
+): Promise<AnalyticsToken[]> {
   const tokens = await getDb().queueToken.findMany({
     where: {
-      clinicId: clinic.id,
-      queue: { queueDate: { gte: toDbDate(days[0]), lte: toDbDate(today) } },
+      clinicId,
+      queue: {
+        queueDate: { gte: toDbDate(firstDay), lte: toDbDate(lastDay) },
+      },
     },
     select: {
       serviceId: true,
@@ -63,23 +66,75 @@ export async function getAdminAnalytics(
       queue: { select: { queueDate: true } },
     },
   });
+  return tokens.map((token) => ({
+    queueDate: token.queue.queueDate.toISOString().slice(0, 10),
+    serviceId: token.serviceId,
+    serviceName: token.service.name,
+    status: token.status,
+    walkIn: token.createdByUserId !== null,
+    joinedAt: token.joinedAt,
+    calledAt: token.calledAt,
+    serviceStartedAt: token.serviceStartedAt,
+    completedAt: token.completedAt,
+  }));
+}
+
+export async function getAdminAnalytics(
+  clinicId: string,
+  range: AnalyticsRange,
+  now: Date = new Date(),
+): Promise<
+  AdminAnalyticsView & {
+    clinicName: string;
+    timezone: string;
+    waitTargetMinutes: number;
+  }
+> {
+  const clinic = await loadClinic(clinicId, "analytics.view");
+  const today = clinicDate(now, clinic.timezone);
+  const days = daysEndingOn(today, RANGE_DAYS[range]);
 
   const view = buildAdminAnalytics({
     range,
     today,
-    tokens: tokens.map((token) => ({
-      queueDate: token.queue.queueDate.toISOString().slice(0, 10),
-      serviceId: token.serviceId,
-      serviceName: token.service.name,
-      status: token.status,
-      walkIn: token.createdByUserId !== null,
-      joinedAt: token.joinedAt,
-      calledAt: token.calledAt,
-      serviceStartedAt: token.serviceStartedAt,
-      completedAt: token.completedAt,
+    tokens: await loadAnalyticsTokens(clinic.id, days[0], today),
+  });
+  return {
+    ...view,
+    clinicName: clinic.name,
+    timezone: clinic.timezone,
+    waitTargetMinutes: clinic.waitTargetMinutes,
+  };
+}
+
+// The admin dashboard's numbers and charts, from one month of tokens.
+export async function getAdminDashboard(
+  clinicId: string,
+  now: Date = new Date(),
+): Promise<AdminDashboardView & { waitTargetMinutes: number }> {
+  const clinic = await loadClinic(clinicId, "analytics.view");
+  const today = clinicDate(now, clinic.timezone);
+  const firstDay = daysEndingOn(today, RANGE_DAYS["30d"])[0];
+
+  const [tokens, services] = await Promise.all([
+    loadAnalyticsTokens(clinic.id, firstDay, today),
+    getDb().service.findMany({
+      where: { clinicId: clinic.id, isActive: true },
+      orderBy: { tokenPrefix: "asc" },
+      select: { id: true, name: true, tokenPrefix: true },
+    }),
+  ]);
+
+  const view = buildAdminDashboard({
+    today,
+    tokens,
+    services: services.map((service) => ({
+      serviceId: service.id,
+      serviceName: service.name,
+      tokenPrefix: service.tokenPrefix,
     })),
   });
-  return { ...view, clinicName: clinic.name, timezone: clinic.timezone };
+  return { ...view, waitTargetMinutes: clinic.waitTargetMinutes };
 }
 
 // ---- Audit log ----

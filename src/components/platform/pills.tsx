@@ -1,16 +1,9 @@
-import type {
-  SubscriptionStatus,
-  SupportTicketStatus,
-  UserStatus,
-} from "@/generated/prisma/enums";
+import type { SupportTicketStatus, UserStatus } from "@/generated/prisma/enums";
 import {
   LIFECYCLE_LABELS,
   type ClinicLifecycle,
 } from "@/features/platform/lifecycle";
-import {
-  SUBSCRIPTION_STATUS_LABELS,
-  SUPPORT_STATUS_LABELS,
-} from "@/features/platform/schemas";
+import { SUPPORT_STATUS_LABELS } from "@/features/platform/schemas";
 import { cn } from "@/lib/utils";
 
 // Status pills always pair the colour with a text label (docs/GUI_RULES.md §8).
@@ -21,7 +14,7 @@ const WAIT = "bg-status-wait text-status-wait-foreground";
 const DONE = "bg-status-done text-status-done-foreground";
 const MISS = "bg-status-miss text-status-miss-foreground";
 const OFF = "bg-status-off text-status-off-foreground";
-const SLATE = "bg-slate text-white";
+const BRAND = "bg-brand-tint text-brand";
 
 const LIFECYCLE_STYLES: Record<ClinicLifecycle, string> = {
   ACTIVE: DONE,
@@ -29,16 +22,9 @@ const LIFECYCLE_STYLES: Record<ClinicLifecycle, string> = {
   SUSPENDED: MISS,
 };
 
-const SUBSCRIPTION_STYLES: Record<SubscriptionStatus, string> = {
-  TRIALING: WAIT,
-  ACTIVE: DONE,
-  PAST_DUE: MISS,
-  CANCELLED: OFF,
-};
-
 const TICKET_STYLES: Record<SupportTicketStatus, string> = {
   OPEN: WAIT,
-  IN_PROGRESS: SLATE,
+  IN_PROGRESS: BRAND,
   RESOLVED: DONE,
 };
 
@@ -46,14 +32,6 @@ export function LifecyclePill({ lifecycle }: { lifecycle: ClinicLifecycle }) {
   return (
     <span className={cn(PILL, LIFECYCLE_STYLES[lifecycle])}>
       {LIFECYCLE_LABELS[lifecycle]}
-    </span>
-  );
-}
-
-export function SubscriptionPill({ status }: { status: SubscriptionStatus }) {
-  return (
-    <span className={cn(PILL, SUBSCRIPTION_STYLES[status])}>
-      {SUBSCRIPTION_STATUS_LABELS[status]}
     </span>
   );
 }

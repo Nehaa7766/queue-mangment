@@ -23,6 +23,10 @@ async function WalkIn() {
     <>
       <PageHeader
         title="Register walk-in"
+        breadcrumbs={[
+          { label: "Reception", href: "/receptionist" },
+          { label: "Register walk-in" },
+        ]}
         status="Add a patient who is at the desk"
       />
       <WalkInPanel queues={queues} />
@@ -32,8 +36,8 @@ async function WalkIn() {
 
 function WalkInSkeleton() {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4">
-      <Skeleton className="h-8 w-56" />
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Skeleton className="h-14 rounded-none" />
       <Skeleton className="h-72 rounded-card" />
       <span className="sr-only">Loading…</span>
     </div>

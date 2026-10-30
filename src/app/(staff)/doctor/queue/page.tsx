@@ -22,8 +22,11 @@ async function Queue() {
     <>
       <PageHeader
         title="My queue"
-        search={false}
-        status={`${view.clinic.name} · ${view.called.length} ready · ${view.waitingCount} waiting`}
+        breadcrumbs={[
+          { label: "Doctor", href: "/doctor" },
+          { label: "My queue" },
+        ]}
+        status={view.clinic.name}
       />
       <DoctorQueueBoard initialView={view} />
     </>

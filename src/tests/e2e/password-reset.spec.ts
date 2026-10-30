@@ -14,7 +14,9 @@ function serverRequestOnce(projectName: string) {
 test("sign-in links to password reset", async ({ page }) => {
   await page.goto("/login");
 
-  await page.getByRole("link", { name: "Forgot password?" }).click();
+  // Shown as "Forgot?" with " password" for screen readers only; Chromium
+  // adds a space after that hidden span, so the name may read "password ?".
+  await page.getByRole("link", { name: /^Forgot password ?\?$/ }).click();
 
   await expect(page).toHaveURL(/\/forgot-password$/);
   await expect(

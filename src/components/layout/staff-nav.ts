@@ -13,23 +13,15 @@ import {
   StethoscopeIcon,
   UserPlusIcon,
   UsersIcon,
-  type LucideIcon,
 } from "lucide-react";
+import type { NavGroup } from "@/components/shell/types";
 import type { MembershipRole } from "@/generated/prisma/enums";
 
-export type NavItem = {
-  href: string;
-  label: string;
-  // Bottom tab bar label, when shorter than `label`.
-  shortLabel?: string;
-  icon: LucideIcon;
-  // Active only on this exact path, not on paths below it.
-  exact?: boolean;
-  // Shown in the phone bottom tab bar. Keep to four per role.
-  tab?: boolean;
-};
-
-export type NavGroup = { label: string; items: NavItem[] };
+export {
+  isActive,
+  type NavGroup,
+  type NavItem,
+} from "@/components/shell/types";
 
 export const PANEL_NAMES: Record<MembershipRole, string> = {
   RECEPTIONIST: "Reception",
@@ -43,7 +35,7 @@ export const ROLE_LABELS: Record<MembershipRole, string> = {
   CLINIC_ADMIN: "Clinic admin",
 };
 
-// Where the bell in the phone top bar leads.
+// Where the bell in the top bar leads.
 export const ACTIVITY_HREF: Record<MembershipRole, string> = {
   RECEPTIONIST: "/receptionist#activity",
   DOCTOR: "/doctor",
@@ -237,9 +229,3 @@ export function navForRole(role: MembershipRole): NavGroup[] {
 }
 
 export const WALK_IN_HREF = "/receptionist/walk-in";
-
-export function isActive(item: NavItem, pathname: string): boolean {
-  return item.exact
-    ? pathname === item.href
-    : pathname === item.href || pathname.startsWith(`${item.href}/`);
-}

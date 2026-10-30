@@ -84,12 +84,13 @@ export function InviteForm({ clinicId }: { clinicId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    // Lays out by its own width: full width below xl, a side column above.
+    <div className="@container flex flex-col gap-4">
       <form
         method="post"
         onSubmit={handleSubmit}
         noValidate
-        className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px_auto] md:items-start"
+        className="grid gap-4 @2xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_180px_auto] @2xl:items-start"
       >
         <Field data-invalid={errors.name ? true : undefined}>
           <FieldLabel htmlFor={`${id}-name`}>Name</FieldLabel>
@@ -140,19 +141,19 @@ export function InviteForm({ clinicId }: { clinicId: string }) {
         <Button
           type="submit"
           disabled={pending}
-          className="h-10 rounded-btn px-5 font-semibold md:mt-[26px]"
+          className="h-10 rounded-btn px-5 font-semibold @2xl:mt-[26px]"
         >
           {pending ? "Inviting…" : "Send invitation"}
         </Button>
         {errors.form && (
-          <FieldError className="md:col-span-4">{errors.form}</FieldError>
+          <FieldError className="@2xl:col-span-4">{errors.form}</FieldError>
         )}
       </form>
 
       {sent && (
         <div
           role="status"
-          className="flex flex-col gap-2 rounded-btn border border-border bg-slate-tint p-3"
+          className="flex flex-col gap-2 rounded-btn border border-brand/20 bg-brand-tint p-3"
         >
           <p className="text-sm font-semibold">
             Invitation ready for {sent.name}

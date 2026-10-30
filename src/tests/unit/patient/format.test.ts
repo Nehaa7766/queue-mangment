@@ -14,6 +14,21 @@ describe("formatEta", () => {
       "Up to 5 min",
     );
   });
+
+  it("switches to hours, to the nearest half hour, for long waits", () => {
+    expect(
+      formatEta({ minMinutes: 330, maxMinutes: 550, isRough: false }),
+    ).toBe("5.5–9 hours");
+    expect(formatEta({ minMinutes: 60, maxMinutes: 90, isRough: false })).toBe(
+      "1–1.5 hours",
+    );
+    expect(formatEta({ minMinutes: 0, maxMinutes: 120, isRough: true })).toBe(
+      "Up to 2 hours",
+    );
+    expect(formatEta({ minMinutes: 45, maxMinutes: 85, isRough: false })).toBe(
+      "45–85 min",
+    );
+  });
 });
 
 describe("formatUpdatedAgo", () => {

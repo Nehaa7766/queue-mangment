@@ -4,7 +4,7 @@ import type { TokenStatus } from "@/features/queue/token-status";
 // Every patient-facing string lives here so Hindi and Marathi can be added
 // later. Assumption: the language toggle is not in v1 (docs/PLAN.md §12.14).
 export const messages = {
-  brand: "QueueCare",
+  patientTag: "Patient queue",
 
   clinic: {
     openNow: "Open now",
@@ -32,6 +32,8 @@ export const messages = {
   join: {
     title: "Join the queue",
     currentWait: "Current wait",
+    peopleWaiting: "People waiting",
+    detailsHeading: "Your details",
     nameLabel: "First name or initials (optional)",
     nameHint: "Reception uses this to call you. You can leave it blank.",
     nameTooLong: "Please use 80 characters or fewer.",
@@ -62,6 +64,7 @@ export const messages = {
 
   token: {
     yourToken: "Your token",
+    aheadLabel: "Ahead of you",
     statusLabel: {
       WAITING: "Waiting",
       CALLED: "Called",

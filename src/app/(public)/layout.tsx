@@ -1,26 +1,22 @@
 import type { ReactNode } from "react";
+import { BrandMark, BrandName } from "@/components/layout/brand-mark";
 import { messages } from "@/components/patient/messages";
 
-// Patient screens: mobile-first, no login, no staff navigation.
+// Patient screens: mobile-first, no login, no staff navigation. White top bar
+// over a light grey page; each screen adds its own clinic strip and column.
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col text-base">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex h-14 w-full max-w-md items-center gap-2.5 px-4">
-          <span
-            aria-hidden="true"
-            className="flex size-9 items-center justify-center rounded-btn bg-slate font-display text-lg font-extrabold text-sand"
-          >
-            Q
-          </span>
-          <span className="font-display text-base font-bold">
-            {messages.brand}
+    <div className="flex flex-1 flex-col bg-background text-base">
+      <header className="sticky top-0 z-10 border-b border-border bg-card">
+        <div className="mx-auto flex h-16 w-full max-w-md items-center gap-2.5 px-4">
+          <BrandMark />
+          <BrandName />
+          <span className="ml-auto text-sm text-muted-foreground">
+            {messages.patientTag}
           </span>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-6">
-        {children}
-      </main>
+      <main className="flex flex-1 flex-col">{children}</main>
     </div>
   );
 }

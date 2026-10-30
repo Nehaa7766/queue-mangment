@@ -28,21 +28,23 @@ async function Staff() {
       <PageHeader
         title="Staff"
         status={`${active} with access${invitations.length ? ` · ${invitations.length} invited` : ""}`}
-        search={false}
+        breadcrumbs={[{ label: "Clinic setup" }, { label: "Staff" }]}
       />
-      <div className="flex flex-col gap-3.5">
-        <AdminSection
-          id="invite"
-          title="Invite someone"
-          description="They get a link to set their own password. No one else ever sees it."
-        >
-          <InviteForm clinicId={context.clinic.id} />
-        </AdminSection>
+      {/* Team first and wide; the invite form beside it on large screens. */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
         <StaffManager
           clinicId={context.clinic.id}
           members={members}
           invitations={invitations}
         />
+        <AdminSection
+          id="invite"
+          title="Invite someone"
+          description="They get a link to set their own password. No one else ever sees it."
+          className="xl:sticky xl:top-20"
+        >
+          <InviteForm clinicId={context.clinic.id} />
+        </AdminSection>
       </div>
     </>
   );

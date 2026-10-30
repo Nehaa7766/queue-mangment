@@ -13,29 +13,39 @@
   --color-slate-*: initial;
   --color-stone-*: initial;
 
-  --color-charcoal: #2a2d34;
-  --color-slate: #475c6c;
-  --color-slate-tint: #e6ecf0;
-  --color-slate-hover: #5a7182;
-  --color-slate-muted: #dce3e8;
-  --color-stone: #8a8583; /* decoration only, never text */
-  --color-sand: #eed7a1;
-  --color-cream: #f7efd2;
-  --color-terracotta: #cd8b62;
-  --color-terracotta-text: #b4532a;
-  --color-divider: #f3eedf;
+  /*
+   * Warm palette (docs/GUI_RULES.md §2): off-white #f2edea, blush #e7cec9,
+   * dusty rose #d5b3a7, tan #b98f76, mocha #86614f. Mocha is the brand;
+   * the lighter shades are for charts and accents, never small text.
+   */
+  --color-brand: #86614f;
+  --color-brand-hover: #765444;
+  --color-brand-tint: #f5ece8; /* active nav item, icon circles */
+  --color-brand-muted: #f2edea; /* small text on mocha */
+  --color-page: #f2edea;
+  --color-divider: #f3eeeb;
+  --color-danger-text: #b42318; /* "over target" numbers, bad trends */
+  --color-blush: #e7cec9;
+  --color-rose: #d5b3a7;
+  --color-tan: #b98f76;
 
-  --color-status-wait: #f6efa6;
-  --color-status-wait-foreground: #5c5410;
+  /* Accent lines under stat cards and chart legends. */
+  --color-tone-amber: #d97706;
+  --color-tone-green: #16a34a;
+  --color-tone-red: #dc2626;
+
+  --color-status-wait: #fef3c7;
+  --color-status-wait-foreground: #92400e;
   --color-status-done: #dcfce7;
   --color-status-done-foreground: #15803d;
   --color-status-miss: #fee2e2;
   --color-status-miss-foreground: #b91c1c;
-  --color-status-off: #f1ece4;
-  --color-status-off-foreground: #5f5a57;
+  --color-status-off: #f1ece9;
+  --color-status-off-foreground: #5e534d;
 
-  --radius-card: 12px;
-  --radius-btn: 10px;
+  --radius-card: 10px;
+  --radius-btn: 8px;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.05);
 }
 
 /* shadcn/ui roles, mapped onto the brand colors. */
@@ -84,38 +94,38 @@
 }
 
 :root {
-  --background: #fbf7ec; /* page */
-  --foreground: #2a2d34; /* charcoal */
+  --background: #f2edea; /* warm off-white page, behind white cards */
+  --foreground: #2e2522; /* warm ink, 15:1 on white */
   --card: #ffffff;
-  --card-foreground: #2a2d34;
+  --card-foreground: #2e2522;
   --popover: #ffffff;
-  --popover-foreground: #2a2d34;
-  --primary: #cd8b62; /* terracotta: the single most important action on screen */
-  --primary-foreground: #2a2d34; /* never white on terracotta */
-  --secondary: #e6ecf0;
-  --secondary-foreground: #2a2d34;
-  --muted: #f3eedf; /* background, not a text color */
-  --muted-foreground: #5f5a57; /* secondary text */
-  --accent: #f7efd2; /* cream hover */
-  --accent-foreground: #2a2d34;
+  --popover-foreground: #2e2522;
+  --primary: #86614f; /* mocha: the single most important action on screen */
+  --primary-foreground: #ffffff; /* 5.5:1 */
+  --secondary: #f4efed;
+  --secondary-foreground: #2e2522;
+  --muted: #f4efed; /* background, not a text color */
+  --muted-foreground: #6e625c; /* secondary text, 5.9:1 on white, 5.1:1 on the page */
+  --accent: #f4efed; /* hover */
+  --accent-foreground: #2e2522;
   --destructive: #b91c1c;
-  --border: #e9e2d0;
-  --input: #e9e2d0;
-  --ring: #475c6c;
-  --chart-1: #475c6c;
-  --chart-2: #cd8b62;
-  --chart-3: #eed7a1;
-  --chart-4: #8a8583;
-  --chart-5: #2a2d34;
-  --radius: 0.625rem;
+  --border: #e8dfdb;
+  --input: #d6cbc6;
+  --ring: #86614f;
+  --chart-1: #86614f;
+  --chart-2: #b98f76;
+  --chart-3: #d5b3a7;
+  --chart-4: #e7cec9;
+  --chart-5: #5e534d;
+  --radius: 0.5rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #2a2d34;
-  --sidebar-primary: #475c6c;
+  --sidebar-foreground: #4a3f3a;
+  --sidebar-primary: #86614f;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f7efd2;
-  --sidebar-accent-foreground: #2a2d34;
-  --sidebar-border: #e9e2d0;
-  --sidebar-ring: #475c6c;
+  --sidebar-accent: #f5ece8;
+  --sidebar-accent-foreground: #86614f;
+  --sidebar-border: #e8dfdb;
+  --sidebar-ring: #86614f;
 }
 
 @layer base {

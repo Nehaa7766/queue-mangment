@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAdminAnalytics,
+  buildAdminDashboard,
   type AnalyticsToken,
 } from "@/features/analytics/admin-analytics";
 import {
@@ -136,6 +137,61 @@ describe("buildAdminAnalytics", () => {
     expect(view.totals.averageWaitMinutes).toBeNull();
     expect(view.totals.medianWaitMinutes).toBeNull();
     expect(view.totals.noShowRate).toBeNull();
+  });
+});
+
+describe("buildAdminDashboard", () => {
+  const services = [
+    { serviceId: "general", serviceName: "General", tokenPrefix: "A" },
+    { serviceId: "dental", serviceName: "Dental", tokenPrefix: "C" },
+    // Active but nobody has joined yet: still gets a card.
+    { serviceId: "eye", serviceName: "Eye", tokenPrefix: "E" },
+  ];
+  const tokens = [
+    token({ status: "COMPLETED" }),
+    token({ status: "WAITING" }),
+    token({ queueDate: "2026-10-29" }),
+    token({ queueDate: "2026-10-29" }),
+    token({ queueDate: "2026-10-29" }),
+    token({ queueDate: "2026-10-29", serviceId: "dental" }),
+    // 20 days ago: in the month, not the week.
+    token({ queueDate: "2026-10-10", status: "COMPLETED" }),
+  ];
+
+  it("builds today, 7-day and 30-day views from one set of tokens", () => {
+    const view = buildAdminDashboard({
+      today: "2026-10-30",
+      tokens,
+      services,
+    });
+
+    expect(view.today.totals.joined).toBe(2);
+    expect(view.week.totals.joined).toBe(6);
+    expect(view.month.totals.joined).toBe(7);
+    expect(view.month.totals.completed).toBe(2);
+    expect(view.month.daily).toHaveLength(30);
+  });
+
+  it("gives every active service a 7-day trend and today's change", () => {
+    const [general, dental, eye] = buildAdminDashboard({
+      today: "2026-10-30",
+      tokens,
+      services,
+    }).services;
+
+    expect(general).toMatchObject({
+      tokenPrefix: "A",
+      joinedToday: 2,
+      completedToday: 1,
+      joinedByDay: [0, 0, 0, 0, 0, 3, 2],
+      changeVsYesterday: -1,
+    });
+    expect(dental).toMatchObject({ joinedToday: 0, changeVsYesterday: -1 });
+    expect(eye).toMatchObject({
+      joinedToday: 0,
+      joinedByDay: [0, 0, 0, 0, 0, 0, 0],
+      changeVsYesterday: 0,
+    });
   });
 });
 

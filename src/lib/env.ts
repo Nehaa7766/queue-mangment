@@ -20,6 +20,10 @@ const envSchema = z
     // Header the reverse proxy overwrites with the client address, e.g.
     // "x-forwarded-for". Leave unset without a proxy: clients can forge it.
     TRUSTED_IP_HEADER: z.string().trim().toLowerCase().min(1).optional(),
+    // Show the demo accounts on the sign-in page in a production build too,
+    // for a demo server. Development always shows them; real sites leave
+    // this unset (the seed refuses to create them in other databases anyway).
+    DEMO_LOGINS: z.stringbool().optional(),
     // Email. Without RESEND_API_KEY, development and tests use an in-memory
     // sender and production refuses to send (src/lib/email).
     RESEND_API_KEY: z.string().min(1).optional(),

@@ -395,7 +395,7 @@ export function QueueSettingsForm({
                 onChange={() =>
                   setValues((current) => ({ ...current, noShowAction: value }))
                 }
-                className="mt-0.5 size-5 accent-slate"
+                className="mt-0.5 size-5 accent-brand"
               />
               <span className="flex flex-col">
                 <span className="text-sm font-medium">{label}</span>

@@ -31,7 +31,7 @@ export function MiniTicketRow({
       <span
         className={cn(
           "flex w-[68px] shrink-0 items-center justify-center border-r-2 border-dashed border-background font-display text-lg font-extrabold tabular-nums",
-          isNext ? "bg-slate text-white" : "bg-cream text-charcoal",
+          isNext ? "bg-brand text-white" : "bg-muted text-foreground",
         )}
       >
         {token.tokenLabel}
@@ -49,7 +49,7 @@ export function MiniTicketRow({
         <span
           className={cn(
             "text-sm font-semibold tabular-nums",
-            overTarget && "text-terracotta-text",
+            overTarget && "text-danger-text",
           )}
         >
           <span aria-hidden>{waited}m</span>
@@ -68,7 +68,7 @@ export function MiniTicketRow({
   );
 
   const rowClass =
-    "flex min-h-12 overflow-hidden rounded-[10px] border border-border bg-card";
+    "flex min-h-12 overflow-hidden rounded-btn border border-border bg-card";
 
   return (
     <li>

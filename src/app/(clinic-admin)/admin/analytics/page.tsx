@@ -2,12 +2,26 @@ import { ClockIcon, UserCheckIcon, UsersIcon, UserXIcon } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { z } from "zod";
-import { AdminSection } from "@/components/admin/admin-ui";
+import {
+  AdminSection,
+  DataTable,
+  DataTableBody,
+  DataTableHead,
+  RowTh,
+  Td,
+  Th,
+} from "@/components/admin/admin-ui";
 import { DailyActivityChart } from "@/components/admin/daily-activity-chart";
 import { AdminPageSkeleton } from "@/components/admin/page-skeleton";
+import {
+  DashboardCard,
+  StatStrip,
+} from "@/components/dashboard/dashboard-card";
+import { HighlightCard } from "@/components/dashboard/highlight-card";
+import { ListRow } from "@/components/dashboard/list-row";
+import { StatCard } from "@/components/dashboard/stat-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireStaffPage } from "@/components/layout/staff-session";
-import { KpiCard } from "@/components/queue/kpi-card";
 import {
   ANALYTICS_RANGES,
   RANGE_LABELS,
@@ -37,6 +51,36 @@ function minutes(value: number | null): string {
   return value === null ? "—" : `${value}m`;
 }
 
+function percent(part: number, whole: number): number {
+  return whole === 0 ? 0 : Math.round((part / whole) * 100);
+}
+
+// Today / 7 days / 30 days, as a segmented control in the page header.
+function RangeSwitch({ range }: { range: AnalyticsRange }) {
+  return (
+    <nav
+      aria-label="Date range"
+      className="inline-flex h-9 items-center rounded-btn border border-border bg-background p-0.5"
+    >
+      {ANALYTICS_RANGES.map((option) => (
+        <Link
+          key={option}
+          href={`/admin/analytics?range=${option}`}
+          aria-current={option === range ? "page" : undefined}
+          className={cn(
+            "inline-flex h-full items-center rounded-[6px] px-3 text-xs font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            option === range
+              ? "bg-brand text-white"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {RANGE_LABELS[option]}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 async function Analytics({ searchParams }: { searchParams: SearchParams }) {
   const context = await requireStaffPage(["CLINIC_ADMIN"]);
   const params = await searchParams;
@@ -49,208 +93,223 @@ async function Analytics({ searchParams }: { searchParams: SearchParams }) {
     view.days.length === 1
       ? formatDayLabel(view.days[0])
       : `${formatDayLabel(view.days[0])} – ${formatDayLabel(view.days.at(-1)!)}`;
+  const finished = totals.completed + totals.noShows;
 
   return (
     <>
       <PageHeader
         title="Analytics and reports"
+        breadcrumbs={[{ label: "Admin" }, { label: "Analytics" }]}
         status={period}
-        search={false}
+        actions={<RangeSwitch range={range} />}
       />
 
-      <nav aria-label="Date range" className="mb-3.5 flex flex-wrap gap-2">
-        {ANALYTICS_RANGES.map((option) => (
-          <Link
-            key={option}
-            href={`/admin/analytics?range=${option}`}
-            aria-current={option === range ? "page" : undefined}
-            className={cn(
-              "inline-flex h-10 items-center rounded-full border px-4 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              option === range
-                ? "border-slate bg-slate text-white"
-                : "border-border bg-card hover:bg-accent",
+      <div className="flex flex-col gap-5">
+        <section
+          aria-label="Totals"
+          className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          <StatCard
+            icon={UsersIcon}
+            value={totals.joined}
+            label="Patients joined"
+            footerLabel="By QR code"
+            footerValue={`${totals.qrJoins} (${percent(totals.qrJoins, totals.joined)}%)`}
+            progress={percent(totals.qrJoins, totals.joined)}
+            tone="brand"
+          />
+          <StatCard
+            icon={UserCheckIcon}
+            value={totals.completed}
+            label="Consultations completed"
+            footerLabel="Average consultation"
+            footerValue={minutes(totals.averageConsultationMinutes)}
+            progress={percent(totals.completed, totals.joined)}
+            tone="green"
+          />
+          <StatCard
+            icon={ClockIcon}
+            value={minutes(totals.averageWaitMinutes)}
+            label="Average wait"
+            footerLabel={`Median ${minutes(totals.medianWaitMinutes)} · target ${view.waitTargetMinutes}m`}
+            footerValue={
+              totals.averageWaitMinutes === null
+                ? "No calls yet"
+                : totals.averageWaitMinutes > view.waitTargetMinutes
+                  ? "Over target"
+                  : "Within target"
+            }
+            progress={percent(
+              totals.averageWaitMinutes ?? 0,
+              view.waitTargetMinutes,
             )}
+            tone={
+              (totals.averageWaitMinutes ?? 0) > view.waitTargetMinutes
+                ? "red"
+                : "amber"
+            }
+          />
+          <StatCard
+            icon={UserXIcon}
+            value={totals.noShowRate === null ? "—" : `${totals.noShowRate}%`}
+            label="No-show rate"
+            footerLabel="No-shows · cancelled"
+            footerValue={`${totals.noShows} of ${finished} · ${totals.cancelled}`}
+            progress={totals.noShowRate ?? 0}
+            tone="red"
+          />
+        </section>
+
+        <div className="grid gap-5 xl:grid-cols-3">
+          {view.days.length > 1 ? (
+            <DashboardCard
+              title="Day by day"
+              description={period}
+              className="xl:col-span-2"
+              footer={
+                <StatStrip
+                  stats={[
+                    { label: "Joined", value: totals.joined, tone: "rose" },
+                    {
+                      label: "Served",
+                      value: totals.completed,
+                      tone: "brand",
+                    },
+                    { label: "No-shows", value: totals.noShows, tone: "red" },
+                    {
+                      label: "Average wait",
+                      value: minutes(totals.averageWaitMinutes),
+                      tone: "amber",
+                    },
+                  ]}
+                />
+              }
+            >
+              <DailyActivityChart data={view.daily} />
+            </DashboardCard>
+          ) : (
+            <DashboardCard
+              title="Today so far"
+              description="Pick 7 or 30 days for the daily chart."
+              className="xl:col-span-2"
+              footer={
+                <StatStrip
+                  stats={[
+                    { label: "Joined", value: totals.joined, tone: "rose" },
+                    {
+                      label: "Served",
+                      value: totals.completed,
+                      tone: "brand",
+                    },
+                    { label: "No-shows", value: totals.noShows, tone: "red" },
+                    {
+                      label: "Average wait",
+                      value: minutes(totals.averageWaitMinutes),
+                      tone: "amber",
+                    },
+                  ]}
+                />
+              }
+            >
+              <p className="text-sm text-muted-foreground">
+                {totals.joined === 0
+                  ? "Nobody has joined today yet."
+                  : `${totals.joined} joined, ${totals.completed} served and ${totals.noShows} marked as no-shows so far today.`}
+              </p>
+            </DashboardCard>
+          )}
+
+          <HighlightCard
+            value={totals.qrJoins}
+            label="Joined by QR code"
+            badge={`${percent(totals.qrJoins, totals.joined)}%`}
+            series={view.daily.map((day) => day.joined)}
+            footer={{ href: "/admin/qr-code", label: "Print the QR poster" }}
           >
-            {RANGE_LABELS[option]}
-          </Link>
-        ))}
-      </nav>
+            <ListRow
+              title="QR code joins"
+              subtitle="Patients who scanned and joined themselves"
+              trailing={totals.qrJoins}
+            />
+            <ListRow
+              title="Walk-ins"
+              subtitle="Registered by reception"
+              trailing={totals.walkIns}
+            />
+            <ListRow
+              title="Cancelled"
+              subtitle="Left the queue before being called"
+              trailing={totals.cancelled}
+            />
+          </HighlightCard>
+        </div>
 
-      <section
-        aria-label="Totals"
-        className="grid grid-cols-2 gap-3.5 lg:grid-cols-4"
-      >
-        <KpiCard
-          label="Patients joined"
-          value={totals.joined}
-          icon={UsersIcon}
-          caption={`${totals.qrJoins} by QR · ${totals.walkIns} walk-ins`}
-        />
-        <KpiCard
-          label="Consultations completed"
-          value={totals.completed}
-          icon={UserCheckIcon}
-          caption={`Average ${minutes(totals.averageConsultationMinutes)} each`}
-        />
-        <KpiCard
-          label="Wait (average · median)"
-          value={`${minutes(totals.averageWaitMinutes)} · ${minutes(totals.medianWaitMinutes)}`}
-          icon={ClockIcon}
-          caption="From joining to being called"
-        />
-        <KpiCard
-          label="No-shows"
-          value={totals.noShows}
-          icon={UserXIcon}
-          caption={
-            totals.noShowRate === null
-              ? `${totals.cancelled} cancelled`
-              : `${totals.noShowRate}% of finished · ${totals.cancelled} cancelled`
-          }
-        />
-      </section>
-
-      {view.days.length > 1 && (
-        <AdminSection title="Day by day" className="mt-3.5">
-          <DailyActivityChart data={view.daily} />
-        </AdminSection>
-      )}
-
-      <AdminSection title="By service" className="mt-3.5">
-        {view.byService.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            No patients in this period yet.
-          </p>
-        ) : (
-          <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-            <table className="w-full min-w-[560px] text-sm">
-              <caption className="sr-only">
-                Patients and waits by service
-              </caption>
-              <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th scope="col" className="py-2 pr-3 font-semibold">
-                    Service
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    Joined
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    Completed
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    No-shows
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    Avg wait
-                  </th>
-                  <th
-                    scope="col"
-                    className="py-2 pl-2 text-right font-semibold"
-                  >
-                    Median wait
-                  </th>
+        <AdminSection title="By service" flush>
+          {view.byService.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+              No patients in this period yet.
+            </p>
+          ) : (
+            <DataTable caption="Patients and waits by service">
+              <DataTableHead>
+                <tr>
+                  <Th>Service</Th>
+                  <Th align="right">Joined</Th>
+                  <Th align="right">Completed</Th>
+                  <Th align="right">No-shows</Th>
+                  <Th align="right">Avg wait</Th>
+                  <Th align="right">Median wait</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-divider tabular-nums">
+              </DataTableHead>
+              <DataTableBody>
                 {view.byService.map((row) => (
                   <tr key={row.serviceId}>
-                    <th
-                      scope="row"
-                      className="py-2.5 pr-3 text-left font-semibold"
-                    >
-                      {row.serviceName}
-                    </th>
-                    <td className="px-2 py-2.5 text-right">{row.joined}</td>
-                    <td className="px-2 py-2.5 text-right">{row.completed}</td>
-                    <td className="px-2 py-2.5 text-right">{row.noShows}</td>
-                    <td className="px-2 py-2.5 text-right">
-                      {minutes(row.averageWaitMinutes)}
-                    </td>
-                    <td className="py-2.5 pl-2 text-right">
-                      {minutes(row.medianWaitMinutes)}
-                    </td>
+                    <RowTh>{row.serviceName}</RowTh>
+                    <Td align="right">{row.joined}</Td>
+                    <Td align="right">{row.completed}</Td>
+                    <Td align="right">{row.noShows}</Td>
+                    <Td align="right">{minutes(row.averageWaitMinutes)}</Td>
+                    <Td align="right">{minutes(row.medianWaitMinutes)}</Td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </AdminSection>
+              </DataTableBody>
+            </DataTable>
+          )}
+        </AdminSection>
 
-      {view.days.length > 1 && (
-        <AdminSection title="Daily numbers" className="mt-3.5">
-          <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-            <table className="w-full min-w-[480px] text-sm">
-              <caption className="sr-only">Patients and waits by day</caption>
-              <thead>
-                <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                  <th scope="col" className="py-2 pr-3 font-semibold">
-                    Day
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    Joined
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    Completed
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-2 py-2 text-right font-semibold"
-                  >
-                    No-shows
-                  </th>
-                  <th
-                    scope="col"
-                    className="py-2 pl-2 text-right font-semibold"
-                  >
-                    Avg wait
-                  </th>
+        {view.days.length > 1 && (
+          <AdminSection title="Daily numbers" flush>
+            <DataTable caption="Patients and waits by day" minWidth={480}>
+              <DataTableHead>
+                <tr>
+                  <Th>Day</Th>
+                  <Th align="right">Joined</Th>
+                  <Th align="right">Completed</Th>
+                  <Th align="right">No-shows</Th>
+                  <Th align="right">Avg wait</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-divider tabular-nums">
+              </DataTableHead>
+              <DataTableBody>
                 {[...view.daily].reverse().map((day) => (
                   <tr key={day.date}>
-                    <th scope="row" className="py-2 pr-3 text-left font-normal">
-                      {day.label}
-                    </th>
-                    <td className="px-2 py-2 text-right">{day.joined}</td>
-                    <td className="px-2 py-2 text-right">{day.completed}</td>
-                    <td className="px-2 py-2 text-right">{day.noShows}</td>
-                    <td className="py-2 pl-2 text-right">
-                      {minutes(day.averageWaitMinutes)}
-                    </td>
+                    <RowTh className="font-normal">{day.label}</RowTh>
+                    <Td align="right">{day.joined}</Td>
+                    <Td align="right">{day.completed}</Td>
+                    <Td align="right">{day.noShows}</Td>
+                    <Td align="right">{minutes(day.averageWaitMinutes)}</Td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </AdminSection>
-      )}
+              </DataTableBody>
+            </DataTable>
+          </AdminSection>
+        )}
 
-      <p className="mt-3.5 text-xs text-muted-foreground">
-        Days follow the clinic&apos;s time zone (
-        {view.timezone.replaceAll("_", " ")}). Waits run from joining to the
-        latest call.
-      </p>
+        <p className="text-xs text-muted-foreground">
+          Days follow the clinic&apos;s time zone (
+          {view.timezone.replaceAll("_", " ")}). Waits run from joining to the
+          latest call.
+        </p>
+      </div>
     </>
   );
 }

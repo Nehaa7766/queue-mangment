@@ -87,42 +87,49 @@ export async function getDoctorPanelView(
     queue: { queueDate },
   };
 
-  const [settings, current, called, waiting, completed] = await Promise.all([
-    db.clinic.findUniqueOrThrow({
-      where: { id: access.clinicId },
-      select: { waitTargetMinutes: true },
-    }),
-    // Any day: an unfinished consultation from yesterday still blocks a new
-    // one, so the doctor has to see it to complete it.
-    db.queueToken.findFirst({
-      where: {
-        clinicId: access.clinicId,
-        status: "IN_SERVICE",
-        assignedDoctorId: access.user.userId,
-      },
-      orderBy: { serviceStartedAt: "asc" },
-      select: staffTokenSelect,
-    }),
-    db.queueToken.findMany({
-      where: { ...today, status: "CALLED" },
-      orderBy: { calledAt: "asc" },
-      select: staffTokenSelect,
-    }),
-    db.queueToken.findMany({
-      where: { ...today, status: "WAITING" },
-      orderBy: { sortKey: "asc" },
-      select: { ...staffTokenSelect, serviceId: true },
-    }),
-    db.queueToken.findMany({
-      where: {
-        clinicId: access.clinicId,
-        status: "COMPLETED",
-        assignedDoctorId: access.user.userId,
-        queue: { queueDate },
-      },
-      select: { serviceStartedAt: true, completedAt: true },
-    }),
-  ]);
+  const [settings, current, called, waiting, inService, completed] =
+    await Promise.all([
+      db.clinic.findUniqueOrThrow({
+        where: { id: access.clinicId },
+        select: { waitTargetMinutes: true },
+      }),
+      // Any day: an unfinished consultation from yesterday still blocks a new
+      // one, so the doctor has to see it to complete it.
+      db.queueToken.findFirst({
+        where: {
+          clinicId: access.clinicId,
+          status: "IN_SERVICE",
+          assignedDoctorId: access.user.userId,
+        },
+        orderBy: { serviceStartedAt: "asc" },
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: { ...today, status: "CALLED" },
+        orderBy: { calledAt: "asc" },
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: { ...today, status: "WAITING" },
+        orderBy: { sortKey: "asc" },
+        select: { ...staffTokenSelect, serviceId: true },
+      }),
+      db.queueToken.findMany({
+        where: { ...today, status: "IN_SERVICE" },
+        orderBy: { serviceStartedAt: "asc" },
+        select: staffTokenSelect,
+      }),
+      db.queueToken.findMany({
+        where: {
+          clinicId: access.clinicId,
+          status: "COMPLETED",
+          assignedDoctorId: access.user.userId,
+          queue: { queueDate },
+        },
+        orderBy: { completedAt: "desc" },
+        select: staffTokenSelect,
+      }),
+    ]);
 
   const waitingByService = new Map<string, number>();
   for (const token of waiting) {
@@ -158,6 +165,8 @@ export async function getDoctorPanelView(
     called: called.map(toStaffTokenView),
     waiting: waitingInOrder.map(toStaffTokenView),
     waitingCount: waiting.length,
+    inService: inService.map(toStaffTokenView),
+    completedToday: completed.map(toStaffTokenView),
     seenToday: completed.length,
     averageConsultationMinutes:
       durations.length > 0

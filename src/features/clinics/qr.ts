@@ -4,7 +4,9 @@ import { getEnv } from "@/lib/env";
 // The clinic's permanent QR code points at its public page. It only changes
 // if the clinic's slug does, which the admin panel never allows.
 
-const QR_COLORS = { dark: "#2a2d34", light: "#ffffff" };
+// Black on white, not brand colours: scanners need the most contrast, and the
+// qrcode library takes literal colour values.
+const QR_COLORS = { dark: "#111827", light: "#ffffff" };
 
 export function clinicPublicUrl(slug: string): string {
   return new URL(`/q/${slug}`, getEnv().BETTER_AUTH_URL).toString();

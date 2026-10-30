@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Area,
+  Bar,
   CartesianGrid,
   ComposedChart,
   Line,
@@ -9,61 +9,76 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { TONE_HEX } from "@/components/dashboard/tone";
 
-// Brand chart colours (docs/GUI_RULES.md §2).
-const SLATE = "#475c6c";
-const SLATE_TINT = "#e6ecf0";
-const TERRACOTTA = "#cd8b62";
-const LINE = "#e9e2d0";
-const MUTED = "#5f5a57";
+// Chart colours from the brand palette (docs/GUI_RULES.md §2): mocha and tan
+// bars, amber for the average-wait line, blush for grid lines and hover.
+const JOINED = TONE_HEX.brand;
+const SERVED = TONE_HEX.tan;
+const WAIT = TONE_HEX.amber;
+const GRID = TONE_HEX.blush;
+// Axis text uses the theme's secondary text colour through a class, which
+// overrides Recharts' default fill attribute.
+const TICK = { fontSize: 12, className: "fill-muted-foreground" };
 
 export type QueueFlowPoint = {
   hour: string;
-  waiting: number;
+  joined: number;
+  served: number;
   averageWaitMinutes: number | null;
 };
 
-// Patients waiting (slate line, light fill) and average wait in minutes
-// (terracotta line) per hour today (docs/PLAN.md §12.7).
-export function QueueFlowChart({ data }: { data: QueueFlowPoint[] }) {
-  const latest = data.at(-1);
+function LegendSwatch({ color, line }: { color: string; line?: boolean }) {
   return (
-    <figure className="flex flex-col gap-3">
-      <figcaption className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    <span
+      aria-hidden
+      className={line ? "h-0.5 w-4 rounded" : "size-2.5 rounded-sm"}
+      style={{ backgroundColor: color }}
+    />
+  );
+}
+
+// Patients joined and served per hour today (paired bars), with the average
+// wait in minutes as a line on the right axis.
+export function QueueFlowChart({ data }: { data: QueueFlowPoint[] }) {
+  const joined = data.reduce((sum, point) => sum + point.joined, 0);
+  const served = data.reduce((sum, point) => sum + point.served, 0);
+  return (
+    <figure className="flex flex-col gap-4">
+      <figcaption className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-0.5 w-4 rounded bg-slate" /> Patients
-          waiting
+          <LegendSwatch color={JOINED} /> Joined
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-0.5 w-4 rounded bg-terracotta" />{" "}
-          Average wait (min)
+          <LegendSwatch color={SERVED} /> Served
         </span>
-        {latest && (
-          <span className="sr-only">
-            At {latest.hour}: {latest.waiting} waiting
-            {latest.averageWaitMinutes !== null &&
-              `, average wait ${latest.averageWaitMinutes} minutes`}
-            .
-          </span>
-        )}
+        <span className="inline-flex items-center gap-1.5">
+          <LegendSwatch color={WAIT} line /> Average wait (min)
+        </span>
+        <span className="sr-only">
+          Today: {joined} joined and {served} served across {data.length}{" "}
+          {data.length === 1 ? "hour" : "hours"}.
+        </span>
       </figcaption>
       <ComposedChart
         responsive
         data={data}
+        barGap={4}
+        barCategoryGap="28%"
         margin={{ top: 4, right: 4, bottom: 0, left: -16 }}
-        style={{ width: "100%", height: 220 }}
+        style={{ width: "100%", height: 260 }}
       >
-        <CartesianGrid stroke={LINE} vertical={false} />
+        <CartesianGrid stroke={GRID} strokeOpacity={0.6} vertical={false} />
         <XAxis
           dataKey="hour"
-          tick={{ fill: MUTED, fontSize: 12 }}
+          tick={TICK}
           tickLine={false}
-          axisLine={{ stroke: LINE }}
+          axisLine={{ stroke: GRID }}
         />
         <YAxis
-          yAxisId="waiting"
+          yAxisId="count"
           allowDecimals={false}
-          tick={{ fill: MUTED, fontSize: 12 }}
+          tick={TICK}
           tickLine={false}
           axisLine={false}
         />
@@ -71,32 +86,45 @@ export function QueueFlowChart({ data }: { data: QueueFlowPoint[] }) {
           yAxisId="wait"
           orientation="right"
           allowDecimals={false}
-          tick={{ fill: MUTED, fontSize: 12 }}
+          tick={TICK}
           tickLine={false}
           axisLine={false}
         />
         <Tooltip
-          contentStyle={{ borderRadius: 10, borderColor: LINE, fontSize: 12 }}
-          formatter={(value, name) =>
-            name === "averageWaitMinutes"
-              ? [`${value} min`, "Average wait"]
-              : [value, "Waiting"]
-          }
+          cursor={{ fill: TONE_HEX.blush, fillOpacity: 0.35 }}
+          contentStyle={{
+            borderRadius: 8,
+            borderColor: "var(--color-border)",
+            fontSize: 12,
+          }}
+          formatter={(value, name) => {
+            if (name === "averageWaitMinutes") {
+              return [`${value} min`, "Average wait"];
+            }
+            return [value, name === "joined" ? "Joined" : "Served"];
+          }}
         />
-        <Area
-          yAxisId="waiting"
-          type="monotone"
-          dataKey="waiting"
-          stroke={SLATE}
-          strokeWidth={2}
-          fill={SLATE_TINT}
+        <Bar
+          yAxisId="count"
+          dataKey="joined"
+          fill={JOINED}
+          radius={[3, 3, 0, 0]}
+          maxBarSize={14}
+          isAnimationActive={false}
+        />
+        <Bar
+          yAxisId="count"
+          dataKey="served"
+          fill={SERVED}
+          radius={[3, 3, 0, 0]}
+          maxBarSize={14}
           isAnimationActive={false}
         />
         <Line
           yAxisId="wait"
           type="monotone"
           dataKey="averageWaitMinutes"
-          stroke={TERRACOTTA}
+          stroke={WAIT}
           strokeWidth={2}
           dot={false}
           connectNulls

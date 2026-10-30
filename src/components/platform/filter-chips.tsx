@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-// Link chips for list filters; the active chip is slate.
+// Link chips for list filters; the active chip is filled in the brand colour.
 export function FilterChips({
   label,
   chips,
@@ -19,7 +19,7 @@ export function FilterChips({
           className={cn(
             "inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             chip.active
-              ? "border-slate bg-slate text-white"
+              ? "border-brand bg-brand text-white"
               : "border-border bg-card hover:bg-accent",
           )}
         >
@@ -60,7 +60,7 @@ export function SearchForm({
         type="search"
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="h-10 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-72"
+        className="h-10 w-full min-w-0 rounded-btn border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-72"
       />
       <button
         type="submit"

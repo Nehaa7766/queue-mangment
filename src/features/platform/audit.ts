@@ -1,11 +1,11 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 export type PlatformAuditTarget =
-  "clinic" | "user" | "subscription" | "support_ticket" | "platform_setting";
+  "clinic" | "user" | "support_ticket" | "platform_setting";
 
 export type PlatformAuditInput = {
   actorUserId: string | null;
-  // Dotted verb, e.g. "clinic.suspended" or "subscription.updated".
+  // Dotted verb, e.g. "clinic.suspended" or "user.deactivated".
   action: string;
   targetType: PlatformAuditTarget;
   targetId?: string | null;

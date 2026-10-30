@@ -8,10 +8,8 @@ import {
   Field,
   FieldContent,
   FieldDescription,
-  FieldError,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
 import {
   platformSettingsUpdateSchema,
   type PlatformSettings,
@@ -26,27 +24,17 @@ export function PlatformSettingsForm({
 }) {
   const router = useRouter();
   const [signupsEnabled, setSignupsEnabled] = useState(initial.signupsEnabled);
-  const [trialDays, setTrialDays] = useState(String(initial.defaultTrialDays));
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const hydrated = useHydrated();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = platformSettingsUpdateSchema.safeParse({
-      signupsEnabled,
-      defaultTrialDays: Number(trialDays),
-    });
-    if (!parsed.success || trialDays.trim() === "") {
-      setError("Use a whole number of days from 0 to 365.");
-      return;
-    }
-    setError(null);
+    const update = platformSettingsUpdateSchema.parse({ signupsEnabled });
     setPending(true);
     try {
       await requestJson("/api/platform/settings", {
         method: "PATCH",
-        body: parsed.data,
+        body: update,
       });
       toast.success("Platform settings saved.");
       router.refresh();
@@ -62,7 +50,7 @@ export function PlatformSettingsForm({
       method="post"
       noValidate
       onSubmit={handleSubmit}
-      className="flex max-w-xl flex-col gap-5 rounded-card border border-border bg-card p-5"
+      className="flex max-w-xl flex-col gap-5 rounded-card border border-border bg-card p-5 shadow-card"
     >
       <Field orientation="horizontal">
         <input
@@ -70,7 +58,7 @@ export function PlatformSettingsForm({
           type="checkbox"
           checked={signupsEnabled}
           onChange={(event) => setSignupsEnabled(event.target.checked)}
-          className="mt-0.5 size-5 shrink-0 accent-slate"
+          className="mt-0.5 size-5 shrink-0 accent-brand"
         />
         <FieldContent>
           <FieldLabel htmlFor="signupsEnabled">
@@ -80,25 +68,6 @@ export function PlatformSettingsForm({
             When off, the public sign-up page tells visitors to contact support.
           </FieldDescription>
         </FieldContent>
-      </Field>
-
-      <Field data-invalid={error ? true : undefined}>
-        <FieldLabel htmlFor="defaultTrialDays">Trial length (days)</FieldLabel>
-        <Input
-          id="defaultTrialDays"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={365}
-          value={trialDays}
-          aria-invalid={error ? true : undefined}
-          onChange={(event) => setTrialDays(event.target.value)}
-          className="h-10 w-32"
-        />
-        <FieldDescription>
-          Applies to clinics that sign up from now on.
-        </FieldDescription>
-        <FieldError>{error}</FieldError>
       </Field>
 
       <div>

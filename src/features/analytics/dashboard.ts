@@ -40,6 +40,7 @@ export type DashboardQueue = {
   queueId: string;
   serviceId: string;
   serviceName: string;
+  tokenPrefix: string;
   status: QueueStatus;
 };
 
@@ -74,12 +75,32 @@ export type DashboardView = {
     // Null until someone has been called today.
     averageWaitMinutes: number | null;
     noShowsToday: number;
+    // Everyone called today, for the no-show rate.
+    calledToday: number;
+    // Every token today except cancelled ones, for the served share.
+    totalToday: number;
   };
   // One point per clinic hour, from the first arrival (or now) to now.
   flow: {
     hour: string;
+    // Waiting at the end of the hour.
     waiting: number;
+    // Joined and finished consultations during the hour.
+    joined: number;
+    served: number;
     averageWaitMinutes: number | null;
+  }[];
+  // Today's queues, one trend card each.
+  queues: {
+    queueId: string;
+    serviceName: string;
+    tokenPrefix: string;
+    status: QueueStatus;
+    waiting: number;
+    served: number;
+    total: number;
+    // Served per hour, aligned with flow.
+    servedByHour: number[];
   }[];
   waitingByService: {
     serviceId: string;
@@ -210,28 +231,50 @@ export function buildDashboard(input: {
     minutesIntoHour * 60_000 -
     now.getUTCSeconds() * 1000 -
     now.getUTCMilliseconds();
-  const flow = [];
-  for (let hour = firstHour; hour <= currentHour; hour++) {
+  // Whether a timestamp falls in the given clinic hour, up to now.
+  const inHour = (time: Date | null, hour: number) =>
+    time !== null && time <= now && clinicHour(time, timeZone) === hour;
+
+  const hours: number[] = [];
+  for (let hour = firstHour; hour <= currentHour; hour++) hours.push(hour);
+
+  const flow = hours.map((hour) => {
     const hoursAgo = currentHour - hour;
     // End of that hour, or now for the current hour.
     const at =
       hoursAgo === 0 ? now : new Date(hourStart - (hoursAgo - 1) * HOUR_MS);
-    const calledThisHour = tokens.filter(
-      (token) =>
-        token.calledAt !== null &&
-        token.calledAt <= now &&
-        clinicHour(token.calledAt, timeZone) === hour,
+    const calledThisHour = tokens.filter((token) =>
+      inHour(token.calledAt, hour),
     );
-    flow.push({
+    return {
       hour: `${String(hour).padStart(2, "0")}:00`,
       waiting: tokens.filter((token) => wasWaitingAt(token, at)).length,
+      joined: tokens.filter((token) => inHour(token.joinedAt, hour)).length,
+      served: tokens.filter((token) => inHour(token.completedAt, hour)).length,
       averageWaitMinutes: average(
         calledThisHour
           .map(waitMinutes)
           .filter((minutes): minutes is number => minutes !== null),
       ),
-    });
-  }
+    };
+  });
+
+  const queueSummaries = queues.map((queue) => {
+    const inQueue = tokens.filter((token) => token.queueId === queue.queueId);
+    return {
+      queueId: queue.queueId,
+      serviceName: queue.serviceName,
+      tokenPrefix: queue.tokenPrefix,
+      status: queue.status,
+      waiting: inQueue.filter((token) => token.status === "WAITING").length,
+      served: inQueue.filter((token) => token.status === "COMPLETED").length,
+      total: inQueue.filter((token) => token.status !== "CANCELLED").length,
+      servedByHour: hours.map(
+        (hour) =>
+          inQueue.filter((token) => inHour(token.completedAt, hour)).length,
+      ),
+    };
+  });
 
   const waitingByService = queues.map((queue) => ({
     serviceId: queue.serviceId,
@@ -283,8 +326,11 @@ export function buildDashboard(input: {
         .length,
       averageWaitMinutes: average(waitTimes),
       noShowsToday: tokens.filter((token) => token.skippedAt !== null).length,
+      calledToday: tokens.filter((token) => token.calledAt !== null).length,
+      totalToday: tokens.filter((token) => token.status !== "CANCELLED").length,
     },
     flow,
+    queues: queueSummaries,
     waitingByService,
     recentActivity: events.map((event) => {
       const kind = activityKind(event.action, event.actorName);

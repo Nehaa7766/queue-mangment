@@ -24,7 +24,10 @@ async function Consultation() {
     <>
       <PageHeader
         title="Current consultation"
-        search={false}
+        breadcrumbs={[
+          { label: "Doctor", href: "/doctor" },
+          { label: "Consultation" },
+        ]}
         status="Name, token and service only. No medical details are recorded."
       />
       <DoctorConsultation initialView={view} />

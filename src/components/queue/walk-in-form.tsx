@@ -124,7 +124,7 @@ export function WalkInForm({
                 className={cn(
                   "flex min-h-11 cursor-pointer items-center gap-2 rounded-btn border px-3.5 text-sm font-medium transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                   checked
-                    ? "border-slate bg-slate text-white"
+                    ? "border-brand bg-brand text-white"
                     : "border-border bg-card hover:bg-accent",
                   disabled && "cursor-not-allowed opacity-60 hover:bg-card",
                 )}

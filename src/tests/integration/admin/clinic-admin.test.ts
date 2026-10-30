@@ -5,6 +5,7 @@ import { POST as createServiceRoute } from "@/app/api/clinics/[clinicId]/service
 import { PATCH as settingsRoute } from "@/app/api/clinics/[clinicId]/settings/route";
 import {
   getAdminAnalytics,
+  getAdminDashboard,
   getAuditLog,
 } from "@/features/analytics/admin-queries";
 import {
@@ -582,6 +583,20 @@ describe("reports", () => {
 
     actAs(clinic.doctor);
     expect(await errorCodeOf(getAdminAnalytics(clinic.clinic.id, "7d"))).toBe(
+      "FORBIDDEN",
+    );
+  });
+
+  it("builds the admin dashboard for admins only", async () => {
+    actAs(clinic.admin);
+    const view = await getAdminDashboard(clinic.clinic.id);
+    expect(view.today.totals.joined).toBeGreaterThanOrEqual(1);
+    expect(view.week.days).toHaveLength(7);
+    expect(view.services.length).toBeGreaterThan(0);
+    expect(view.waitTargetMinutes).toBeGreaterThan(0);
+
+    actAs(clinic.receptionist);
+    expect(await errorCodeOf(getAdminDashboard(clinic.clinic.id))).toBe(
       "FORBIDDEN",
     );
   });

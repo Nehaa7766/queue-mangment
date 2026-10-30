@@ -91,13 +91,7 @@ JOIN "clinics" c ON c."id" = s."clinic_id"
 WHERE c."slug" = 'demo-clinic'
 ON CONFLICT ("service_id", "queue_date") DO NOTHING;
 
--- Platform plan for pilot clinics. Real plans and prices are a Phase 10 decision.
-INSERT INTO "plans" ("id", "code", "name", "price_monthly_minor", "currency", "updated_at")
-VALUES ('00000000-0000-4000-8000-000000000501', 'pilot', 'Pilot', 0, 'INR', now())
-ON CONFLICT ("code") DO NOTHING;
-
-INSERT INTO "subscriptions" ("id", "clinic_id", "plan_id", "status", "trial_ends_at", "updated_at")
-VALUES ('00000000-0000-4000-8000-000000000601', '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000501', 'TRIALING', now() + interval '90 days', now())
-ON CONFLICT ("clinic_id") DO NOTHING;
+-- No plans or subscriptions: the billing area was removed on 2026-10-30
+-- (docs/COMMERCIAL.md). The tables stay in the schema for later.
 
 COMMIT;

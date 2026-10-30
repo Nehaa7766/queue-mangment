@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import {
-  PlatformPageHeader,
-  PlatformPageSkeleton,
-} from "@/components/platform/platform-shell";
+import { PageHeader } from "@/components/layout/page-header";
+import { PlatformPageSkeleton } from "@/components/platform/platform-shell";
 import { requirePlatformPage } from "@/components/platform/platform-session";
 import { PlatformSettingsForm } from "@/components/platform/settings-form";
 import { getPlatformSettings } from "@/features/platform/settings-store";
@@ -23,9 +21,10 @@ async function Settings() {
   const settings = await getPlatformSettings();
   return (
     <>
-      <PlatformPageHeader
+      <PageHeader
         title="Platform settings"
-        description="Apply to every clinic on QueueCare."
+        breadcrumbs={[{ label: "Settings" }]}
+        status="Apply to every clinic on QueueCare."
       />
       <PlatformSettingsForm initial={settings} />
     </>

@@ -201,9 +201,10 @@ describe("doctor panel", () => {
       params({ tokenId: called.id, action: "start" }),
     );
     expect(started.status).toBe(200);
-    expect(((await panel()).body as DoctorPanelView).current?.id).toBe(
-      called.id,
-    );
+    const during = (await panel()).body as DoctorPanelView;
+    expect(during.current?.id).toBe(called.id);
+    expect(during.inService.map((t) => t.id)).toContain(called.id);
+    expect(during.completedToday).toEqual([]);
 
     const completed = await tokenAction(
       post(),
@@ -214,7 +215,24 @@ describe("doctor panel", () => {
     expect(after.current).toBeNull();
     expect(after.seenToday).toBe(1);
     expect(after.averageConsultationMinutes).toBe(0);
+    expect(after.inService.map((t) => t.id)).not.toContain(called.id);
+    expect(after.completedToday).toEqual([
+      expect.objectContaining({
+        id: called.id,
+        status: "COMPLETED",
+        patientName: "History patient",
+      }),
+    ]);
 
+    // Another doctor serving the same service sees the whole picture too:
+    // nothing of theirs is done, but the patient list is the same.
+    actAs(clinic.secondDoctor);
+    const colleague = (await panel()).body as DoctorPanelView;
+    expect(colleague.completedToday).toEqual([]);
+    // History is per doctor: the colleague completed nothing.
+    expect((await getDoctorHistory()).days).toEqual([]);
+
+    actAs(clinic.doctor);
     const history = await getDoctorHistory();
     expect(history.days).toHaveLength(1);
     expect(history.days[0].entries).toEqual([

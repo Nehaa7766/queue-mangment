@@ -1,7 +1,46 @@
 import { PlayIcon } from "lucide-react";
+import { TokenBadge } from "@/components/dashboard/list-row";
 import { displayName, formatClock } from "@/components/queue/token-display";
 import { Button } from "@/components/ui/button";
 import type { StaffTokenView } from "@/features/queue/contracts";
+import { cn } from "@/lib/utils";
+
+// Start for one called patient. While Start is blocked, the reason is read
+// out with the button and shown under the list.
+export function StartButton({
+  token,
+  blockedReason,
+  pending,
+  onStart,
+  className,
+}: {
+  token: Pick<StaffTokenView, "id" | "tokenLabel" | "patientName">;
+  blockedReason: string | null;
+  pending: boolean;
+  onStart: () => void;
+  className?: string;
+}) {
+  const reasonId = `start-reason-${token.id}`;
+  return (
+    <>
+      <Button
+        className={cn("h-10 rounded-btn px-4 font-semibold", className)}
+        disabled={blockedReason !== null}
+        aria-describedby={blockedReason ? reasonId : undefined}
+        aria-label={`Start consultation with ${token.tokenLabel}, ${displayName(token.patientName)}`}
+        onClick={onStart}
+      >
+        <PlayIcon />
+        {pending ? "Starting…" : "Start"}
+      </Button>
+      {blockedReason && (
+        <span id={reasonId} className="sr-only">
+          {blockedReason}
+        </span>
+      )}
+    </>
+  );
+}
 
 // Patients reception has called, ready for the doctor to start. Doctors
 // don't call patients themselves (permission matrix), so an empty list says
@@ -19,69 +58,50 @@ export function CalledPatientList({
   pendingTokenId: string | null;
   onStart: (token: StaffTokenView) => void;
 }) {
+  if (tokens.length === 0) {
+    return (
+      <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+        Waiting for reception to call the next patient. Called patients appear
+        here.
+      </p>
+    );
+  }
   return (
-    <section aria-labelledby="ready-title" className="flex flex-col gap-2">
-      <h2
-        id="ready-title"
-        className="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase"
-      >
-        Ready to start · {tokens.length}
-      </h2>
-      {tokens.length === 0 ? (
-        <p className="rounded-card border border-dashed border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
-          Waiting for reception to call the next patient. Called patients appear
-          here.
+    <div className="flex flex-col">
+      <ul className="divide-y divide-divider px-5">
+        {tokens.map((token) => {
+          const calledFor = token.calledAt
+            ? (now - Date.parse(token.calledAt)) / 1000
+            : null;
+          return (
+            <li key={token.id} className="flex items-center gap-3 py-3.5">
+              <TokenBadge label={token.tokenLabel} />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-semibold">
+                  {displayName(token.patientName)}
+                </span>
+                <span className="truncate text-xs text-muted-foreground tabular-nums">
+                  {token.serviceName}
+                  {calledFor !== null &&
+                    ` · called ${formatClock(calledFor)} ago`}
+                </span>
+              </span>
+              <StartButton
+                token={token}
+                blockedReason={blockedReason}
+                pending={pendingTokenId === token.id}
+                onStart={() => onStart(token)}
+                className="shrink-0"
+              />
+            </li>
+          );
+        })}
+      </ul>
+      {blockedReason && (
+        <p className="px-5 pb-4 text-xs text-muted-foreground">
+          {blockedReason}
         </p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {tokens.map((token) => {
-            const calledFor = token.calledAt
-              ? (now - Date.parse(token.calledAt)) / 1000
-              : null;
-            const reasonId = `start-reason-${token.id}`;
-            return (
-              <li
-                key={token.id}
-                className="flex min-h-14 overflow-hidden rounded-[10px] border border-border bg-card"
-              >
-                <span className="flex w-[68px] shrink-0 items-center justify-center border-r-2 border-dashed border-background bg-status-wait font-display text-lg font-extrabold text-status-wait-foreground tabular-nums">
-                  {token.tokenLabel}
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col justify-center px-3 py-2">
-                  <span className="truncate text-sm font-semibold">
-                    {displayName(token.patientName)}
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground tabular-nums">
-                    {token.serviceName}
-                    {calledFor !== null &&
-                      ` · called ${formatClock(calledFor)} ago`}
-                  </span>
-                </span>
-                <span className="flex shrink-0 items-center pr-2">
-                  <Button
-                    className="h-11 rounded-btn px-4 font-semibold"
-                    disabled={blockedReason !== null}
-                    aria-describedby={blockedReason ? reasonId : undefined}
-                    aria-label={`Start consultation with ${token.tokenLabel}, ${displayName(token.patientName)}`}
-                    onClick={() => onStart(token)}
-                  >
-                    <PlayIcon />
-                    {pendingTokenId === token.id ? "Starting…" : "Start"}
-                  </Button>
-                  {blockedReason && (
-                    <span id={reasonId} className="sr-only">
-                      {blockedReason}
-                    </span>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
       )}
-      {tokens.length > 0 && blockedReason && (
-        <p className="text-xs text-muted-foreground">{blockedReason}</p>
-      )}
-    </section>
+    </div>
   );
 }

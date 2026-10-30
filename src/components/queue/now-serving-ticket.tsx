@@ -15,7 +15,7 @@ export type TicketToken = Pick<
   | "recallCount"
 >;
 
-// The "Now serving" ticket stub (docs/GUI_RULES.md §5): slate stub, dashed
+// The "Now serving" ticket stub (docs/GUI_RULES.md §5): brand-colour stub, dashed
 // perforation with notches, details and actions on the white body.
 export function NowServingTicket({
   token,
@@ -44,7 +44,7 @@ export function NowServingTicket({
     <section
       aria-label="Now serving"
       className={cn(
-        "flex flex-col overflow-hidden rounded-card border border-border bg-card sm:flex-row",
+        "flex flex-col overflow-hidden rounded-card border border-border bg-card shadow-card sm:flex-row",
         className,
       )}
     >
@@ -57,11 +57,11 @@ export function NowServingTicket({
 
       <div
         className={cn(
-          "relative flex shrink-0 flex-col gap-0.5 border-b-2 border-dashed border-background bg-slate px-5 py-4 text-white sm:border-r-2 sm:border-b-0",
+          "relative flex shrink-0 flex-col gap-0.5 border-b-2 border-dashed border-background bg-brand px-5 py-4 text-white sm:border-r-2 sm:border-b-0",
           compact ? "sm:w-32" : "sm:w-40",
         )}
       >
-        <span className="text-[11px] font-semibold tracking-[0.08em] text-slate-muted uppercase">
+        <span className="text-[11px] font-semibold tracking-[0.08em] text-brand-muted uppercase">
           Now serving
         </span>
         <span
@@ -75,7 +75,7 @@ export function NowServingTicket({
           {token?.tokenLabel ?? "—"}
         </span>
         {token && (
-          <span className="truncate text-sm text-sand">
+          <span className="truncate text-sm text-brand-muted">
             {token.status === "IN_SERVICE" ? "With doctor" : "Please come in"}
           </span>
         )}
@@ -128,10 +128,10 @@ export function NowServingTicket({
                   aria-valuemax={gracePeriodSeconds}
                   aria-valuenow={Math.round(remainingSeconds)}
                   aria-valuetext={`${formatClock(remainingSeconds)} left`}
-                  className="h-1.5 overflow-hidden rounded-full bg-cream"
+                  className="h-1.5 overflow-hidden rounded-full bg-muted"
                 >
                   <div
-                    className="h-full rounded-full bg-terracotta transition-[width] duration-1000 ease-linear motion-reduce:transition-none"
+                    className="h-full rounded-full bg-brand transition-[width] duration-1000 ease-linear motion-reduce:transition-none"
                     style={{
                       width: `${(remainingSeconds / gracePeriodSeconds) * 100}%`,
                     }}

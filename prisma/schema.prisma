@@ -34,6 +34,21 @@ enum ClinicStatus {
   INACTIVE
 }
 
+// Kind of practice, shown on the clinic profile.
+enum ClinicType {
+  GENERAL
+  DENTAL
+  PEDIATRIC
+  GYNECOLOGY
+  ORTHOPEDIC
+  DERMATOLOGY
+  ENT
+  EYE
+  MULTI_SPECIALTY
+  DIAGNOSTIC
+  OTHER
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -99,8 +114,16 @@ model Clinic {
   slug         String       @unique
   // IANA name; queue days are computed in this timezone.
   timezone     String       @default("Asia/Kolkata")
-  address      String?
+  clinicType   ClinicType   @default(GENERAL) @map("clinic_type")
+  // Official contact email, shown to staff; not used for sign-in.
+  email        String?
   phone        String?
+  // Street address; city, state and PIN code are separate for search and
+  // display (Indian addresses: PIN is 6 digits).
+  address      String?
+  city         String?
+  state        String?
+  pinCode      String?      @map("pin_code") @db.VarChar(6)
   // Weekly hours, e.g. { "mon": [["09:00", "13:00"]] }. Edited in Phase 7.
   openingHours Json?        @map("opening_hours")
   status       ClinicStatus @default(ACTIVE)
@@ -130,8 +153,23 @@ model Clinic {
   invitations    StaffInvitation[]
   subscription   Subscription?
   supportTickets SupportTicket[]
+  logo           ClinicLogo?
 
   @@map("clinics")
+}
+
+// A clinic's logo, kept in the database so small servers need no file
+// storage. PNG, JPEG or WebP, at most 512 KB (src/features/clinics/logo.ts).
+// Served at /api/public/clinics/[clinicSlug]/logo.
+model ClinicLogo {
+  clinicId    String   @id @map("clinic_id") @db.Uuid
+  contentType String   @map("content_type")
+  data        Bytes
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@map("clinic_logos")
 }
 
 // Staff and platform users only. Patients have no account in the MVP.

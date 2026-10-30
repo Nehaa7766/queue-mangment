@@ -32,7 +32,8 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "same-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    // Camera only for this site's own pages: the home page QR scanner.
+    value: "camera=(self), microphone=(), geolocation=(), payment=(), usb=()",
   },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   // Browsers ignore HSTS on plain HTTP (RFC 6797 §8.1), so this only takes

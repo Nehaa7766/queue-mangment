@@ -27,7 +27,7 @@ export default function SignupPage() {
         Already using QueueCare?{" "}
         <Link
           href="/login"
-          className="font-medium text-slate underline-offset-4 hover:underline"
+          className="font-medium text-brand underline-offset-4 hover:underline"
         >
           Sign in
         </Link>
@@ -42,7 +42,7 @@ async function SignupGate() {
   const settings = await getPlatformSettings();
   if (!settings.signupsEnabled) {
     return (
-      <section className="rounded-card border border-border bg-card p-6">
+      <section className="rounded-card border border-border bg-card p-6 shadow-card">
         <h2 className="font-display text-lg font-bold">Sign-ups are paused</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           We aren&apos;t taking new clinics right now. Please get in touch and

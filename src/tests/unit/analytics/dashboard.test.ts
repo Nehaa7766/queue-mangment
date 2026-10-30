@@ -90,12 +90,14 @@ function build(tokens = TOKENS) {
         queueId: "queue-a",
         serviceId: "service-a",
         serviceName: "General",
+        tokenPrefix: "A",
         status: "OPEN",
       },
       {
         queueId: "queue-b",
         serviceId: "service-b",
         serviceName: "Pediatrics",
+        tokenPrefix: "B",
         status: "OPEN",
       },
     ],
@@ -122,14 +124,64 @@ describe("buildDashboard", () => {
       // (20 + 50 + 70) / 3, rounded.
       averageWaitMinutes: 47,
       noShowsToday: 1,
+      // t1, t2 and t3 were called.
+      calledToday: 3,
+      // Everyone except the cancelled t6.
+      totalToday: 5,
     });
   });
 
   it("builds one flow point per clinic hour, measured at the end of each hour", () => {
     expect(build().flow).toEqual([
-      { hour: "09:00", waiting: 2, averageWaitMinutes: 20 },
-      { hour: "10:00", waiting: 1, averageWaitMinutes: 50 },
-      { hour: "11:00", waiting: 2, averageWaitMinutes: 70 },
+      // t1 and t2 joined; t1 was served at 09:50.
+      {
+        hour: "09:00",
+        waiting: 2,
+        joined: 2,
+        served: 1,
+        averageWaitMinutes: 20,
+      },
+      // t6 (later cancelled) and t3 joined.
+      {
+        hour: "10:00",
+        waiting: 1,
+        joined: 2,
+        served: 0,
+        averageWaitMinutes: 50,
+      },
+      {
+        hour: "11:00",
+        waiting: 2,
+        joined: 2,
+        served: 0,
+        averageWaitMinutes: 70,
+      },
+    ]);
+  });
+
+  it("summarises each queue for its trend card", () => {
+    expect(build().queues).toEqual([
+      {
+        queueId: "queue-a",
+        serviceName: "General",
+        tokenPrefix: "A",
+        status: "OPEN",
+        waiting: 1,
+        served: 1,
+        // The cancelled t6 doesn't count.
+        total: 4,
+        servedByHour: [1, 0, 0],
+      },
+      {
+        queueId: "queue-b",
+        serviceName: "Pediatrics",
+        tokenPrefix: "B",
+        status: "OPEN",
+        waiting: 1,
+        served: 0,
+        total: 1,
+        servedByHour: [0, 0, 0],
+      },
     ]);
   });
 
@@ -152,9 +204,17 @@ describe("buildDashboard", () => {
     const view = build([]);
     expect(view.kpis.averageWaitMinutes).toBeNull();
     expect(view.flow).toEqual([
-      { hour: "11:00", waiting: 0, averageWaitMinutes: null },
+      {
+        hour: "11:00",
+        waiting: 0,
+        joined: 0,
+        served: 0,
+        averageWaitMinutes: null,
+      },
     ]);
     expect(view.queueCard?.nowServing).toBeNull();
+    expect(view.kpis.totalToday).toBe(0);
+    expect(view.queues.map((queue) => queue.servedByHour)).toEqual([[0], [0]]);
   });
 });
 

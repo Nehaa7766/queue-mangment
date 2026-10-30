@@ -3,7 +3,6 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { POST as signupRoute } from "@/app/api/onboarding/signup/route";
 import { GET as slugRoute } from "@/app/api/onboarding/slug-availability/route";
 import {
-  SIGNUP_PLAN_CODE,
   assertSignupsOpen,
   checkSlugAvailability,
   signUpClinic,
@@ -11,13 +10,12 @@ import {
 import type { SignupInput } from "@/features/onboarding/signup-schema";
 import { setClinicStatus } from "@/features/platform/clinics";
 import { DEFAULT_PLATFORM_SETTINGS } from "@/features/platform/settings";
-import { getPlatformSettings } from "@/features/platform/settings-store";
 import { loadStaffContext } from "@/lib/auth/staff-context";
 import { getDb } from "@/lib/db";
 import { AppError } from "@/lib/errors/app-error";
 import { actAs, cleanUp, createUser, createdTracker } from "./fixtures";
 
-// Needs the test database migrated and seeded (the "pilot" plan).
+// Needs the test database migrated.
 vi.mock("@/lib/auth/session", () => ({ getSessionUser: vi.fn() }));
 
 const created = createdTracker();
@@ -60,10 +58,8 @@ async function codeOf(promise: Promise<unknown>): Promise<string> {
 }
 
 describe("signUpClinic", () => {
-  it("creates the clinic, service, admin, login and trial together", async () => {
+  it("creates the clinic, service, admin and login together", async () => {
     const data = input();
-    const settings = await getPlatformSettings();
-    const before = Date.now();
 
     const result = await signUp(data);
 
@@ -73,7 +69,6 @@ describe("signUpClinic", () => {
       include: {
         services: true,
         memberships: true,
-        subscription: { include: { plan: true } },
       },
     });
     expect(clinic).toMatchObject({
@@ -87,11 +82,10 @@ describe("signUpClinic", () => {
     expect(clinic.memberships).toMatchObject([
       { userId: result.userId, role: "CLINIC_ADMIN", status: "ACTIVE" },
     ]);
-    expect(clinic.subscription?.status).toBe("TRIALING");
-    expect(clinic.subscription?.plan.code).toBe(SIGNUP_PLAN_CODE);
-    const trialMs = clinic.subscription!.trialEndsAt!.getTime() - before;
-    const expected = settings.defaultTrialDays * 24 * 60 * 60 * 1000;
-    expect(Math.abs(trialMs - expected)).toBeLessThan(60_000);
+    // Billing was removed: no subscription or trial is started.
+    expect(
+      await db.subscription.count({ where: { clinicId: result.clinicId } }),
+    ).toBe(0);
 
     const account = await db.account.findFirstOrThrow({
       where: { userId: result.userId, providerId: "credential" },

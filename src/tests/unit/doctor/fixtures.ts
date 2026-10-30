@@ -51,6 +51,8 @@ export function panelView(
     ],
     waiting: [staffToken({ id: "18" }), staffToken({ id: "19" })],
     waitingCount: 2,
+    inService: [],
+    completedToday: [],
     seenToday: 3,
     averageConsultationMinutes: 9,
     waitTargetMinutes: 20,

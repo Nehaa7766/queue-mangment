@@ -1,23 +1,18 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Loading state for the doctor's live screens.
+// Loading state for the doctor's live screens, shaped like the dashboard.
 export function DoctorPanelSkeleton({ label }: { label: string }) {
   return (
-    <div aria-busy="true" className="flex flex-col gap-4">
-      <Skeleton className="h-8 w-48" />
-      <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-3">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton
-            key={i}
-            className="h-[104px] rounded-card last:col-span-2 lg:last:col-span-1"
-          />
+    <div aria-busy="true" className="flex flex-col gap-5">
+      <Skeleton className="-mx-4 -mt-4 h-16 rounded-none md:-mx-6 md:-mt-6" />
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-[132px] rounded-card" />
         ))}
       </div>
-      <Skeleton className="h-40 rounded-card" />
-      <div className="flex flex-col gap-2">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="h-14 rounded-[10px]" />
-        ))}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Skeleton className="h-96 rounded-card" />
+        <Skeleton className="h-96 rounded-card" />
       </div>
       <span className="sr-only">{label}</span>
     </div>

@@ -105,3 +105,5 @@ export function useDoctorPanel(initialView: DoctorPanelView) {
 
   return { view, pending, run, refresh, lastSynced, refreshFailed, setDoctor };
 }
+
+export type DoctorPanel = ReturnType<typeof useDoctorPanel>;

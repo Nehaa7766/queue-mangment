@@ -78,6 +78,14 @@ test("reception navigation fits the screen", async ({ page }, testInfo) => {
       nav.getByRole("link", { name: "Register walk-in" }),
     ).toBeVisible();
     await nav.getByRole("link", { name: "Queue" }).click();
+  } else if (testInfo.project.name === "tablet-834") {
+    // Below lg the sidebar lives in a drawer behind the top bar's menu button.
+    await page.getByRole("button", { name: "Open menu", exact: true }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("navigation", { name: "Main" })
+      .getByRole("link", { name: "Live queue" })
+      .click();
   } else {
     await nav.getByRole("link", { name: "Live queue" }).click();
   }

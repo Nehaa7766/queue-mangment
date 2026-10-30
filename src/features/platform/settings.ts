@@ -6,8 +6,6 @@ import { z } from "zod";
 const settingsSchema = z.object({
   // When false, the public /signup form refuses new clinics.
   signupsEnabled: z.boolean(),
-  // Trial length for clinics that sign up themselves.
-  defaultTrialDays: z.number().int().min(0).max(365),
 });
 
 export type PlatformSettings = z.infer<typeof settingsSchema>;
@@ -19,7 +17,6 @@ export const PLATFORM_SETTING_KEYS = Object.keys(
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   signupsEnabled: true,
-  defaultTrialDays: 90,
 };
 
 // For PATCH requests: any subset of the known keys, nothing else.
@@ -38,9 +35,6 @@ export function parsePlatformSettings(
     if (row.key === "signupsEnabled") {
       const parsed = settingsSchema.shape.signupsEnabled.safeParse(row.value);
       if (parsed.success) settings.signupsEnabled = parsed.data;
-    } else if (row.key === "defaultTrialDays") {
-      const parsed = settingsSchema.shape.defaultTrialDays.safeParse(row.value);
-      if (parsed.success) settings.defaultTrialDays = parsed.data;
     }
   }
   return settings;

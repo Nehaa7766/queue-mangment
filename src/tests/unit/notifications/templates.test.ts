@@ -41,10 +41,10 @@ describe("renderStaffInvitationEmail", () => {
     expect(email.html).not.toContain("<b>Rao</b>");
   });
 
-  it("is a full accessible document with charcoal text on the button", () => {
+  it("is a full accessible document with white text on the mocha button", () => {
     expect(email.html).toMatch(/^<!doctype html>\n<html lang="en">/);
-    expect(email.html).toContain("background:#CD8B62;color:#2A2D34");
-    expect(email.html).not.toMatch(/#CD8B62;color:#(FFF|FFFFFF)\b/i);
+    // White on mocha #86614F is 5.5:1.
+    expect(email.html).toContain("background:#86614F;color:#FFFFFF");
   });
 });
 

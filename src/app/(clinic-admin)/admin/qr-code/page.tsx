@@ -26,9 +26,9 @@ async function QrCode() {
       <PageHeader
         title="QR code"
         status="Permanent: it never changes, so print it once."
-        search={false}
+        breadcrumbs={[{ label: "Clinic setup" }, { label: "QR code" }]}
       />
-      <div className="grid gap-3.5 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
         <AdminSection title="Preview">
           <div
             role="img"
@@ -38,7 +38,7 @@ async function QrCode() {
             dangerouslySetInnerHTML={{ __html: qr.svg }}
           />
         </AdminSection>
-        <div className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-5">
           <AdminSection
             title="Clinic page link"
             description="Scanning the code opens this page. Patients choose a service there and join; scanning alone never creates a token."

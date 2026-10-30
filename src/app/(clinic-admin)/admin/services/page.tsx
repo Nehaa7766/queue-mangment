@@ -22,7 +22,7 @@ async function Services() {
       <PageHeader
         title="Services"
         status={`${active} active of ${services.length}`}
-        search={false}
+        breadcrumbs={[{ label: "Clinic setup" }, { label: "Services" }]}
       />
       <ServicesManager clinicId={context.clinic.id} services={services} />
     </>

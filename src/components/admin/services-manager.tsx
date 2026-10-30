@@ -127,9 +127,11 @@ function ServiceForm({
       method="post"
       onSubmit={handleSubmit}
       noValidate
-      className="flex flex-col gap-4"
+      className="@container flex flex-col gap-4"
     >
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_120px_140px]">
+      {/* Lays out by the form's own width: it sits in a narrow side column
+          on wide screens and in a dialog when editing. */}
+      <div className="grid gap-4 @md:grid-cols-[minmax(0,1fr)_120px_140px]">
         {field(
           "name",
           "Service name",
@@ -246,44 +248,26 @@ export function ServicesManager({
   }
 
   return (
-    <div className="flex flex-col gap-3.5">
-      <AdminSection
-        id="add-service"
-        title="Add a service"
-        description="Patients choose a service when they join. Each service has its own queue and token prefix."
-      >
-        <ServiceForm
-          initial={EMPTY}
-          submitLabel="Add service"
-          onSubmit={async (data) => {
-            await adminRequest(`/api/clinics/${clinicId}/services`, {
-              method: "POST",
-              body: data,
-            });
-            toast.success(`${data.name} added. It opens with today's queues.`);
-            router.refresh();
-          }}
-        />
-      </AdminSection>
-
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
       <AdminSection
         title="Services"
+        flush
         description="Turning a service off hides it from patients but keeps its tokens and reports."
       >
         {services.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            No services yet. Add the first one above.
+          <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+            No services yet. Add the first one.
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-divider">
             {services.map((service) => (
               <li
                 key={service.id}
-                className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center"
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center"
               >
                 <span
                   aria-hidden
-                  className="flex size-11 shrink-0 items-center justify-center rounded-btn bg-cream font-display text-lg font-extrabold text-slate"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-btn bg-brand-tint font-display text-lg font-extrabold text-brand"
                 >
                   {service.tokenPrefix}
                 </span>
@@ -344,6 +328,25 @@ export function ServicesManager({
             ))}
           </ul>
         )}
+      </AdminSection>
+      <AdminSection
+        id="add-service"
+        className="xl:sticky xl:top-20"
+        title="Add a service"
+        description="Patients choose a service when they join. Each service has its own queue and token prefix."
+      >
+        <ServiceForm
+          initial={EMPTY}
+          submitLabel="Add service"
+          onSubmit={async (data) => {
+            await adminRequest(`/api/clinics/${clinicId}/services`, {
+              method: "POST",
+              body: data,
+            });
+            toast.success(`${data.name} added. It opens with today's queues.`);
+            router.refresh();
+          }}
+        />
       </AdminSection>
 
       <Dialog

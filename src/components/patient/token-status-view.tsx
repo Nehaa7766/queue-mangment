@@ -4,6 +4,7 @@ import type { PublicTokenView } from "@/features/queue/contracts";
 import { cn } from "@/lib/utils";
 import { formatEta, formatUpdatedAgo } from "./format";
 import { messages } from "./messages";
+import { PatientStat } from "./patient-page";
 import { TokenStatusPill } from "./status-pill";
 import { TicketHero } from "./ticket-hero";
 
@@ -15,7 +16,7 @@ function StatusMessage({ token }: { token: PublicTokenView }) {
       return <WaitingMessage token={token} />;
     case "CALLED":
       return (
-        <div className="flex flex-col gap-1 rounded-card bg-status-wait p-4 text-status-wait-foreground">
+        <div className="flex flex-col gap-1 rounded-card border border-tone-amber/40 bg-status-wait p-4 text-status-wait-foreground">
           <p className="font-display text-2xl font-extrabold motion-safe:animate-pulse">
             {t.calledTitle}
           </p>
@@ -60,25 +61,18 @@ function WaitingMessage({ token }: { token: PublicTokenView }) {
         </p>
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <PatientStat label={t.aheadLabel} value={ahead} />
+        {token.estimate && (
+          <PatientStat
+            label={t.estimateLabel}
+            value={formatEta(token.estimate)}
+            note={token.estimate.isRough ? t.roughEstimate : undefined}
+          />
+        )}
+      </div>
       {token.estimate && (
-        <div className="flex flex-col gap-1 rounded-card bg-cream p-4">
-          <span className="text-[11px] font-semibold tracking-[0.06em] text-muted-foreground uppercase">
-            {t.estimateLabel}
-          </span>
-          <span className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-display text-[26px] font-bold tabular-nums">
-              {formatEta(token.estimate)}
-            </span>
-            {token.estimate.isRough && (
-              <span className="text-sm font-medium text-muted-foreground">
-                {t.roughEstimate}
-              </span>
-            )}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {t.estimateNote}
-          </span>
-        </div>
+        <p className="text-sm text-muted-foreground">{t.estimateNote}</p>
       )}
     </div>
   );
@@ -89,7 +83,7 @@ function QueueBanner({ token }: { token: PublicTokenView }) {
     return null;
   }
   return (
-    <p className="rounded-card bg-status-off p-4 text-base text-status-off-foreground">
+    <p className="rounded-card border border-border bg-status-off p-4 text-base text-status-off-foreground">
       {token.queueStatus === "PAUSED" ? t.pausedBanner : t.closedBanner}
     </p>
   );
