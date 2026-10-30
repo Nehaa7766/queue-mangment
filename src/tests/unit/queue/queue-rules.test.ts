@@ -71,15 +71,11 @@ describe("assertCanCallNext", () => {
   });
 
   it("blocks calling from a paused queue", () => {
-    expect(errorCodeOf(() => assertCanCallNext("PAUSED"))).toBe(
-      "QUEUE_PAUSED",
-    );
+    expect(errorCodeOf(() => assertCanCallNext("PAUSED"))).toBe("QUEUE_PAUSED");
   });
 
   it("blocks calling from a closed queue", () => {
-    expect(errorCodeOf(() => assertCanCallNext("CLOSED"))).toBe(
-      "QUEUE_CLOSED",
-    );
+    expect(errorCodeOf(() => assertCanCallNext("CLOSED"))).toBe("QUEUE_CLOSED");
   });
 });
 

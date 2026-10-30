@@ -24,8 +24,8 @@ jobs:
       - name: Format check
         run: docker compose exec -T app npm run format:check
 
-      - name: Apply migrations to the test database
-        run: docker compose exec -T app sh -c 'DATABASE_URL=$TEST_DATABASE_URL npm run db:deploy'
+      - name: Migrate and seed the test database
+        run: docker compose exec -T app sh -c 'DATABASE_URL=$TEST_DATABASE_URL npm run db:deploy && DATABASE_URL=$TEST_DATABASE_URL npx prisma db seed'
 
       - name: Unit and integration tests
         run: docker compose exec -T app npm test

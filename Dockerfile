@@ -48,8 +48,13 @@ CMD ["node", "server.js"]
 FROM mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-noble AS e2e
 ARG PLAYWRIGHT_VERSION
 WORKDIR /e2e
+COPY package.json /tmp/app-package.json
+# Only the E2E packages, at the versions package.json pins.
 RUN npm init -y > /dev/null \
-  && npm install --no-audit --no-fund @playwright/test@${PLAYWRIGHT_VERSION}
+  && AXE_VERSION=$(node -p "require('/tmp/app-package.json').devDependencies['@axe-core/playwright']") \
+  && npm install --no-audit --no-fund \
+    @playwright/test@${PLAYWRIGHT_VERSION} \
+    "@axe-core/playwright@${AXE_VERSION}"
 COPY playwright.config.ts ./
 COPY src/tests/e2e ./src/tests/e2e
 CMD ["npx", "playwright", "test"]

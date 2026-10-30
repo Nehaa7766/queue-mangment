@@ -67,6 +67,26 @@ enum NoShowAction {
   REQUEUE
 }
 
+// Set by doctors (Phase 6); shown to reception and patients.
+enum DoctorAvailability {
+  AVAILABLE
+  ON_BREAK
+  OFF_DUTY
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
 // ---------------------------------------------------------------------------
 // Tenancy and people
 // ---------------------------------------------------------------------------
@@ -86,44 +106,121 @@ model Clinic {
   status       ClinicStatus @default(ACTIVE)
 
   // Assumption: one wait target for the whole clinic, not per service.
-  waitTargetMinutes  Int          @default(20) @map("wait_target_minutes")
+  waitTargetMinutes        Int          @default(20) @map("wait_target_minutes")
   // Assumption: 5 minutes for a called patient to arrive.
-  gracePeriodSeconds Int          @default(300) @map("grace_period_seconds")
+  gracePeriodSeconds       Int          @default(300) @map("grace_period_seconds")
   // Null means no limit.
-  maxQueueSize       Int?         @map("max_queue_size")
-  noShowAction       NoShowAction @default(SKIP) @map("no_show_action")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  memberships ClinicMembership[]
-  services    Service[]
-  queues      Queue[]
-  tokens      QueueToken[]
-  auditEvents AuditEvent[]
-
-  @@map("clinics")
-}
-
-// Staff and platform users only. Patients have no account in the MVP.
-model User {
-  id           String        @id @default(uuid(7)) @db.Uuid
-  name         String
-  email        String        @unique
-  // Set once authentication is wired (Phase 2, Auth.js step).
-  passwordHash String?       @map("password_hash")
-  platformRole PlatformRole? @map("platform_role")
-  status       UserStatus    @default(ACTIVE)
+  maxQueueSize             Int?         @map("max_queue_size")
+  noShowAction             NoShowAction @default(SKIP) @map("no_show_action")
+  // Whether a skipped patient may be put back in the queue.
+  allowRequeue             Boolean      @default(true) @map("allow_requeue")
+  // Assumption until a retention policy is agreed (Phase 9): patient names
+  // are cleared this many days after the visit.
+  patientDataRetentionDays Int          @default(30) @map("patient_data_retention_days")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   memberships    ClinicMembership[]
+  services       Service[]
+  queues         Queue[]
+  tokens         QueueToken[]
+  auditEvents    AuditEvent[]
+  holidays       ClinicHoliday[]
+  invitations    StaffInvitation[]
+  subscription   Subscription?
+  supportTickets SupportTicket[]
+
+  @@map("clinics")
+}
+
+// Staff and platform users only. Patients have no account in the MVP.
+// Also Better Auth's user model (src/lib/auth/auth.ts); passwords live in Account.
+model User {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false) @map("email_verified")
+  image         String?
+  platformRole  PlatformRole? @map("platform_role")
+  status        UserStatus    @default(ACTIVE)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  sessions       Session[]
+  accounts       Account[]
+  memberships    ClinicMembership[]
   assignedTokens QueueToken[]       @relation("AssignedDoctor")
   createdTokens  QueueToken[]       @relation("CreatedBy")
   auditEvents    AuditEvent[]
 
+  sentInvitations     StaffInvitation[]    @relation("InvitedBy")
+  supportTickets      SupportTicket[]
+  platformAuditEvents PlatformAuditEvent[]
+
   @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Authentication (Better Auth). Field names follow Better Auth's defaults.
+// ---------------------------------------------------------------------------
+
+model Session {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  // Opaque session token stored in the cookie.
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// One row per sign-in method. Email and password uses providerId "credential",
+// with the password hash in `password`.
+model Account {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  userId                String    @map("user_id") @db.Uuid
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// Short-lived values such as password reset tokens.
+model Verification {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
 }
 
 model ClinicMembership {
@@ -133,11 +230,19 @@ model ClinicMembership {
   role     MembershipRole
   status   MembershipStatus @default(ACTIVE)
 
+  // Doctors only (Phase 6).
+  availability          DoctorAvailability @default(AVAILABLE)
+  // Extra delay the doctor announces, in minutes.
+  delayMinutes          Int                @default(0) @map("delay_minutes")
+  availabilityNote      String?            @map("availability_note") @db.VarChar(120)
+  availabilityUpdatedAt DateTime?          @map("availability_updated_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  clinic Clinic @relation(fields: [clinicId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  clinic             Clinic              @relation(fields: [clinicId], references: [id])
+  user               User                @relation(fields: [userId], references: [id])
+  serviceAssignments ServiceAssignment[]
 
   @@unique([clinicId, userId])
   @@index([userId])
@@ -162,9 +267,10 @@ model Service {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  clinic Clinic       @relation(fields: [clinicId], references: [id])
-  queues Queue[]
-  tokens QueueToken[]
+  clinic      Clinic              @relation(fields: [clinicId], references: [id])
+  queues      Queue[]
+  tokens      QueueToken[]
+  assignments ServiceAssignment[]
 
   @@unique([clinicId, name])
   @@unique([clinicId, tokenPrefix])
@@ -198,24 +304,24 @@ model Queue {
 }
 
 model QueueToken {
-  id            String      @id @default(uuid(7)) @db.Uuid
+  id             String      @id @default(uuid(7)) @db.Uuid
   // Used in the patient's status URL. v4 is fully random; v7 would expose
   // the creation time and be partly guessable.
-  publicTokenId String      @unique @default(uuid(4)) @map("public_token_id")
-  queueId       String      @map("queue_id") @db.Uuid
+  publicTokenId  String      @unique @default(uuid(4)) @map("public_token_id")
+  queueId        String      @map("queue_id") @db.Uuid
   // Copied from the queue so tenant checks don't need a join.
-  clinicId      String      @map("clinic_id") @db.Uuid
-  serviceId     String      @map("service_id") @db.Uuid
+  clinicId       String      @map("clinic_id") @db.Uuid
+  serviceId      String      @map("service_id") @db.Uuid
   // Never changes; the source of tokenLabel.
-  sequenceNumber Int        @map("sequence_number")
+  sequenceNumber Int         @map("sequence_number")
   // FIFO order. Equals sequenceNumber at join; a requeue takes a fresh value
   // from the same counter so the token moves to the end.
-  sortKey       Int         @map("sort_key")
-  tokenLabel    String      @map("token_label") @db.VarChar(16)
+  sortKey        Int         @map("sort_key")
+  tokenLabel     String      @map("token_label") @db.VarChar(16)
   // Assumption: optional first name or initials only; no phone in the MVP.
-  patientName   String?     @map("patient_name") @db.VarChar(80)
-  status        TokenStatus @default(WAITING)
-  recallCount   Int         @default(0) @map("recall_count")
+  patientName    String?     @map("patient_name") @db.VarChar(80)
+  status         TokenStatus @default(WAITING)
+  recallCount    Int         @default(0) @map("recall_count")
 
   // Assumption: doctors share the service queue; this records who serves it.
   assignedDoctorId String? @map("assigned_doctor_id") @db.Uuid
@@ -278,17 +384,22 @@ model AuditEvent {
 
 // Written in the same transaction as the action; sent later by a worker (Phase 8).
 model OutboxEvent {
-  id           String    @id @default(uuid(7)) @db.Uuid
-  eventType    String    @map("event_type")
-  aggregateId  String    @map("aggregate_id")
-  payload      Json
-  createdAt    DateTime  @default(now()) @map("created_at")
-  processedAt  DateTime? @map("processed_at")
-  attemptCount Int       @default(0) @map("attempt_count")
+  id            String    @id @default(uuid(7)) @db.Uuid
+  eventType     String    @map("event_type")
+  aggregateId   String    @map("aggregate_id")
+  payload       Json
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+  attemptCount  Int       @default(0) @map("attempt_count")
   // Sanitized: no secrets or patient details.
-  lastError    String?   @map("last_error")
+  lastError     String?   @map("last_error")
+  // Earliest time the worker may try again; pushed back after each failure.
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
+  // Set when retries run out; someone needs to look at the event.
+  failedAt      DateTime? @map("failed_at")
 
   @@index([processedAt, createdAt])
+  @@index([processedAt, failedAt, nextAttemptAt])
   @@map("outbox_events")
 }
 
@@ -306,4 +417,146 @@ model IdempotencyRecord {
 
   @@unique([scope, idempotencyKey])
   @@map("idempotency_records")
+}
+
+// ---------------------------------------------------------------------------
+// Clinic setup (Phases 6–7)
+// ---------------------------------------------------------------------------
+
+// Which services a doctor serves. Set by clinic admins (Phase 7).
+// Assumption: a doctor with no assignments may serve every service.
+model ServiceAssignment {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  membershipId String   @map("membership_id") @db.Uuid
+  serviceId    String   @map("service_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  membership ClinicMembership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  service    Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([membershipId, serviceId])
+  @@index([serviceId])
+  @@map("service_assignments")
+}
+
+// Days the clinic is closed, in the clinic's timezone.
+model ClinicHoliday {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  clinicId  String   @map("clinic_id") @db.Uuid
+  date      DateTime @db.Date
+  name      String   @db.VarChar(80)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, date])
+  @@map("clinic_holidays")
+}
+
+// The invitation link carries a random token; only its SHA-256 hash is stored.
+model StaffInvitation {
+  id              String         @id @default(uuid(7)) @db.Uuid
+  clinicId        String         @map("clinic_id") @db.Uuid
+  email           String
+  name            String
+  role            MembershipRole
+  tokenHash       String         @unique @map("token_hash")
+  invitedByUserId String?        @map("invited_by_user_id") @db.Uuid
+  expiresAt       DateTime       @map("expires_at")
+  acceptedAt      DateTime?      @map("accepted_at")
+  revokedAt       DateTime?      @map("revoked_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  invitedBy User?  @relation("InvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([clinicId, createdAt])
+  @@map("staff_invitations")
+}
+
+// ---------------------------------------------------------------------------
+// Platform (Phase 10)
+// ---------------------------------------------------------------------------
+
+model Plan {
+  id                String  @id @default(uuid(7)) @db.Uuid
+  code              String  @unique
+  name              String
+  // Smallest currency unit, e.g. paise for INR.
+  priceMonthlyMinor Int     @map("price_monthly_minor")
+  currency          String  @default("INR") @db.VarChar(3)
+  // Null means no limit.
+  maxStaff          Int?    @map("max_staff")
+  maxServices       Int?    @map("max_services")
+  isActive          Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// Assumption: platform admins manage subscriptions by hand until a payment
+// provider is chosen; there is no payment integration yet.
+model Subscription {
+  id               String             @id @default(uuid(7)) @db.Uuid
+  clinicId         String             @unique @map("clinic_id") @db.Uuid
+  planId           String             @map("plan_id") @db.Uuid
+  status           SubscriptionStatus @default(TRIALING)
+  trialEndsAt      DateTime?          @map("trial_ends_at")
+  currentPeriodEnd DateTime?          @map("current_period_end")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+model SupportTicket {
+  id              String              @id @default(uuid(7)) @db.Uuid
+  clinicId        String?             @map("clinic_id") @db.Uuid
+  createdByUserId String?             @map("created_by_user_id") @db.Uuid
+  subject         String              @db.VarChar(160)
+  body            String
+  status          SupportTicketStatus @default(OPEN)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic    Clinic? @relation(fields: [clinicId], references: [id], onDelete: SetNull)
+  createdBy User?   @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@map("support_tickets")
+}
+
+// Super admin actions. Clinic-level actions stay in audit_events.
+model PlatformAuditEvent {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  // Dotted verb, e.g. "clinic.suspended", "subscription.updated".
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String?  @map("target_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("platform_audit_events")
+}
+
+model PlatformSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
 }

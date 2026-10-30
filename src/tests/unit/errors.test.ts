@@ -70,9 +70,7 @@ describe("withApiHandler", () => {
       {},
     );
 
-    expect(response.headers.get(REQUEST_ID_HEADER)).toMatch(
-      /^[0-9a-f-]{36}$/,
-    );
+    expect(response.headers.get(REQUEST_ID_HEADER)).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it("turns a thrown AppError into an error response", async () => {

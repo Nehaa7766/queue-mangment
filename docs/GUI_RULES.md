@@ -67,8 +67,10 @@ Always pair a status color with a text label.
 | No-show / Emergency | `bg-status-miss text-status-miss-foreground` | `SKIPPED` |
 | Paused / Off | `bg-status-off text-status-off-foreground` | `CANCELLED`, queue `PAUSED` / `CLOSED`, doctor off |
 
-The state-to-style mapping is the proposal in PLAN.md §12.2; confirm it
-before Phase 4.
+This mapping (from PLAN.md §12.2) is implemented in the status pills
+(`src/components/queue/status-pill.tsx`,
+`src/components/patient/status-pill.tsx`). Change it there and here
+together.
 
 ### Color rules
 
@@ -156,7 +158,7 @@ validation, toggle, select.
 
 | Width | Navigation | Notes |
 |---|---|---|
-| Phone, below 768px (default) | Slate top bar (logo, queue status pill, bell) + bottom tab bar | Tabs: Overview · Queue · Walk-in (raised terracotta button) · History · Profile. Now serving first, full-width 56px Call next. KPIs 2 × 2. Charts hidden. |
+| Phone, below 768px (default) | Slate top bar (logo, clinic name, bell) + bottom tab bar | Tabs are the nav items marked `tab: true` in `src/components/layout/staff-nav.ts` (at most four per role), plus Profile (the account menu). Reception and admin get the raised terracotta Walk-in button in the middle. Reception: Overview · Queue · Walk-in · History · Profile. Now serving first, full-width 56px Call next. KPIs 2 × 2. Charts hidden. |
 | Tablet, `md` (768--1023px) | 72px slate icon rail; active icon on cream; badges stay | Search becomes an icon button. KPIs stay 4 across. Two-column grids stack or go 2-up. |
 | Desktop, `lg` (1024px+) | 236px white sidebar with right border | Grouped sections with uppercase labels. Active item `bg-slate text-white`; hover `bg-cream`. |
 
@@ -188,6 +190,10 @@ validation, toggle, select.
 - Visible focus rings (`ring`); full keyboard navigation on staff
   panels.
 - Icon-only buttons have an `aria-label`.
+- A control with visible text takes its accessible name from that text.
+  Don't add an `aria-label` that replaces it; add `sr-only` text for
+  extra context instead (e.g. "24m" on screen, "24 minutes" for screen
+  readers). axe flags a mismatch as serious.
 - Dialogs, drawers and modals are accessible (focus trap, Escape to
   close, labelled).
 - `aria-live="polite"` on the patient status area and the Now serving

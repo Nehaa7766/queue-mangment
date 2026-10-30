@@ -190,7 +190,7 @@ resource ownership on the server.
 | Database | PostgreSQL | Store clinics, users, queues, tokens, and audit events |
 | ORM and migrations | Prisma | Database access and schema migrations |
 | Validation | Zod | Validate API requests and form data |
-| Authentication | Auth.js or another maintained session solution | Login and session management |
+| Authentication | Better Auth (chosen over Auth.js, whose v5 is still beta) | Login and session management |
 | Forms | React Hook Form + Zod | Form state and validation |
 | Charts | Recharts | Operational dashboards and analytics |
 | Unit testing | Vitest | Test queue rules and business logic |
@@ -738,7 +738,8 @@ The main identity element. Echoes the printed token slip.
 
 #### Phone (under 768px)
 
--   Slate top bar: logo, queue status pill, bell.
+-   Slate top bar: logo, clinic name, bell. (Built with the clinic name
+    instead of a queue status pill, because status differs per queue.)
 -   **Bottom tab bar**: Overview · Queue · Walk-in (raised terracotta
     FAB) · History · Profile.
 -   Now serving ticket first, full-width 56px Call next button.
@@ -993,7 +994,7 @@ via `next/font/google`.
 ## 14. Error Handling and Observability
 
 Create typed application errors such as: - `VALIDATION_ERROR` -
-`UNAUTHENTICATED` - `FORBIDDEN` - `CLINIC_NOT_FOUND` - `QUEUE_CLOSED` -
+`UNAUTHENTICATED` - `FORBIDDEN` - `CLINIC_NOT_FOUND` - `QUEUE_NOT_FOUND` - `QUEUE_CLOSED` -
 `QUEUE_PAUSED` - `TOKEN_NOT_FOUND` - `INVALID_STATE_TRANSITION` -
 `IDEMPOTENCY_CONFLICT` - `RATE_LIMITED` - `INTERNAL_ERROR`
 
@@ -1187,3 +1188,26 @@ Known limitations and follow-up tasks are recorded.
 **Important:** Treat these as product decisions to validate with pilot
 clinics, not assumptions to hard-code. Start with the smallest workflow
 that solves the validated problem.
+
+### Working assumptions in the code (until Phase 0 confirms them)
+
+Development started before the pilot interviews, so the code uses these
+defaults. Each one is also commented where it lives (mostly
+`prisma/schema.prisma` and `src/features/queue/`). Replace a row with
+the confirmed answer, then update the code.
+
+| Question | Working assumption |
+|---|---|
+| FIFO or priority? | FIFO only. No priority tokens in v1. |
+| Several doctors per service? Separate or shared queue? | One queue per service per clinic day, shared by every doctor on that service. The token records which doctor served it. |
+| Called patient does not arrive? | Grace period of 5 minutes, then the token is skipped (clinic setting: skip or requeue). |
+| Can skipped patients rejoin? Where? | Yes, at the back of the queue. The label (e.g. `A-17`) stays the same. |
+| Can patients cancel? | Yes, while their token is still waiting. |
+| Remote join? | Allowed. The QR link is permanent. |
+| Phone number? | Not collected. Optional first name or initials only (max 80 characters). |
+| Paused queue? | Waiting patients keep their place. No new joins, and Call Next is blocked. |
+| Daily reset and labels? | A new queue each day in the clinic's timezone; numbers restart at 1. Label = service prefix + number, e.g. `A-17`. |
+| Wait-time target | One clinic-wide value, 20 minutes by default. |
+| Inactive service or full queue | Shown to patients as a closed queue. |
+| Who can do what | Reception calls patients; doctors start and complete consultations; receptionists can pause and resume; clinic admins manage settings, services and staff but do not run consultations. |
+| Data retention | Not decided yet. Needed before the Phase 9 pilot. |

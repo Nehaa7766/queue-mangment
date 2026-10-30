@@ -1,9 +1,8 @@
 # QueueCare --- Folder Structure
 
-This file shows how the repository is laid out today and where future
-code will go. Items marked **Phase N** do not exist yet; they are
-created in that phase of [PHASES.md](PHASES.md). Everything else exists
-now (Phase 1).
+This file shows how the repository is laid out after Phases 1--10 of
+[PHASES.md](PHASES.md). Everything listed here exists. Folders are
+described once; only files you are likely to look for are named.
 
 For how the layers fit together, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -11,84 +10,123 @@ For how the layers fit together, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ``` text
 queue-mangment/
-├── .github/
-│   └── workflows/
-│       └── ci.yml                  # CI: builds and tests through docker compose
-├── docker/
-│   └── postgres/
-│       └── init.sql                # creates the queuecare_test database
+├── .github/workflows/ci.yml        # CI: lint, types, tests, production build and E2E, all through docker compose
+├── docker/postgres/
+│   ├── init.sql                    # creates queuecare_test next to queuecare_dev
+│   ├── backup.sh                   # pg_dump in custom format, timestamped
+│   └── restore.sh                  # restore into a named database; refuses to overwrite without --force
 ├── docs/
-│   ├── ARCHITECTURE.md             # layers, request flow, Docker topology, decisions
+│   ├── ARCHITECTURE.md             # layers, request flows, Docker services, decisions
+│   ├── COMMERCIAL.md               # what is built for selling, decisions still open
 │   ├── FOLDER_STRUCTURE.md         # this file
 │   ├── GUI_RULES.md                # design contract for every screen
-│   ├── PHASES.md                   # phase-by-phase delivery plan
-│   └── PLAN.md                     # full product and technical plan
+│   ├── PHASES.md                   # phase-by-phase delivery plan and progress
+│   ├── PLAN.md                     # full product and technical plan
+│   ├── PRIVACY.md                  # patient data kept, retention, deletion
+│   ├── RUNBOOK.md                  # deploy, backups, restore drill, rollback, incidents
+│   ├── SECURITY_REVIEW.md          # security findings and their status
+│   └── STAFF_GUIDE.md              # one-page guides for reception and doctors
 ├── prisma/
-│   ├── schema.prisma               # datasource + generator only; models come in Phase 2
-│   └── migrations/                 # Phase 2
+│   ├── schema.prisma               # data model; the connection URL lives in prisma.config.ts
+│   ├── seed.sql                    # demo clinic, staff logins, pilot plan; refuses non-local databases
+│   └── migrations/                 # init, auth (Better Auth tables), phases_6_to_10
 ├── public/                         # static files served as-is
 ├── src/
-│   ├── app/                        # Next.js App Router: pages, layouts, route handlers
-│   │   ├── layout.tsx              # root layout, fonts
-│   │   ├── page.tsx                # placeholder "Now serving" ticket
+│   ├── proxy.ts                    # Next.js 16 proxy: early redirect to /login for staff areas without a session cookie
+│   ├── app/                        # App Router: pages, layouts, route handlers
+│   │   ├── layout.tsx              # root layout: fonts, toaster
+│   │   ├── page.tsx                # home page (design preview)
 │   │   ├── globals.css             # Tailwind v4 design tokens (@theme)
-│   │   ├── favicon.ico
-│   │   ├── api/
-│   │   │   └── health/route.ts     # GET /api/health --- database check
-│   │   ├── (public)/
-│   │   │   ├── q/[clinicSlug]/             # Phase 4 --- clinic landing, join queue
-│   │   │   └── token/[publicTokenId]/      # Phase 4 --- token status
-│   │   ├── (auth)/
-│   │   │   └── login/              # Phase 2
-│   │   ├── (staff)/
-│   │   │   ├── receptionist/       # Phase 5
-│   │   │   └── doctor/             # Phase 6
-│   │   ├── (clinic-admin)/
-│   │   │   └── admin/              # Phase 7
-│   │   └── (platform-admin)/
-│   │       └── super-admin/        # Phase 10
+│   │   ├── error.tsx, not-found.tsx
+│   │   ├── (public)/               # patients, no login
+│   │   │   ├── q/[clinicSlug]/                 # clinic landing and service list
+│   │   │   ├── q/[clinicSlug]/join/[queueId]/  # explicit "Join queue" confirmation
+│   │   │   └── token/[publicTokenId]/          # live token status
+│   │   ├── (auth)/                 # login, unauthorized, forgot-password, reset-password, accept-invite/[token]
+│   │   ├── (staff)/                # shared staff shell; requires a clinic membership
+│   │   │   ├── receptionist/       # dashboard, queue, walk-in, history, tokens/[tokenId]
+│   │   │   └── doctor/             # dashboard, queue, consultation, history, availability
+│   │   ├── (clinic-admin)/admin/   # dashboard, services, doctors, staff, roles, settings, qr-code (+ poster), analytics, audit
+│   │   ├── (platform-admin)/super-admin/  # dashboard, clinics, users, subscriptions, billing, activity, support, settings
+│   │   ├── (onboarding)/           # signup (+ pending), support tickets for clinic staff
+│   │   └── api/
+│   │       ├── health/             # GET /api/health; outbox counts only with the job token
+│   │       ├── auth/[...all]/      # Better Auth endpoints
+│   │       ├── public/             # clinic view, token status, patient cancel
+│   │       ├── queues/[queueId]/   # tokens (GET staff, POST join), call-next, walk-ins, pause, resume
+│   │       ├── tokens/[tokenId]/[action]/  # recall, skip, requeue, cancel, start, complete
+│   │       ├── doctor/             # queue view, availability
+│   │       ├── clinics/[clinicId]/ # queues/today, dashboard, and the admin APIs (services, staff, members, doctors, settings, holidays, invitations, analytics, audit)
+│   │       ├── services/[serviceId]/       # edit or disable one service
+│   │       ├── invitations/[token]/accept/ # accept a staff invitation
+│   │       ├── platform/           # super admin APIs
+│   │       ├── onboarding/         # signup, slug availability
+│   │       ├── support/tickets/    # tickets from clinic staff
+│   │       └── internal/           # outbox/process, retention/run (bearer INTERNAL_JOB_SECRET)
 │   ├── components/
-│   │   ├── ui/                     # shadcn/ui components (button today)
-│   │   ├── layout/                 # Phase 5 --- sidebar, icon rail, bottom tabs, header
-│   │   ├── queue/                  # Phases 4--5 --- ticket stub, mini ticket rows, status pill
-│   │   ├── forms/                  # Phases 5--7 --- shared form fields
-│   │   └── charts/                 # Phases 5 and 7 --- Recharts wrappers
+│   │   ├── ui/                     # shadcn/ui primitives
+│   │   ├── layout/                 # staff shell, sidebar, icon rail, bottom tabs, header; staff-nav.ts holds every staff menu
+│   │   ├── queue/                  # reception: now serving ticket, mini ticket rows, KPI card, live queue, walk-in form
+│   │   ├── charts/                 # Recharts: queue flow line, waiting-by-service donut
+│   │   ├── patient/                # patient screens, ticket hero, join form; messages.ts holds all patient text
+│   │   ├── doctor/                 # doctor screens, availability form, break and delay banners
+│   │   ├── admin/                  # admin managers and forms, opening hours editor, QR actions
+│   │   ├── platform/               # super admin shell and controls
+│   │   ├── onboarding/             # signup wizard, support ticket form
+│   │   └── auth/                   # login, forgot and reset password forms, sign-out button
 │   ├── features/                   # domain modules; business rules live here
-│   │   ├── auth/                   # Phase 2 --- session and permission helpers
-│   │   ├── clinics/                # Phases 2--7 --- clinic profile, hours, settings
-│   │   ├── services/               # Phases 3--7 --- clinic services
-│   │   ├── queue/                  # Phase 3 --- queue service, transitions, position, ETA
-│   │   ├── staff/                  # Phases 2 and 7 --- memberships, staff, invitations
-│   │   ├── analytics/              # Phases 5 and 7 --- KPIs and reports
-│   │   └── audit/                  # Phase 2 --- audit event writer and reader
-│   ├── generated/
-│   │   └── prisma/                 # Prisma client output (gitignored, made by `prisma generate`)
+│   │   ├── queue/
+│   │   │   ├── contracts.ts        # SHARED: API paths and request/response shapes for queue screens
+│   │   │   ├── service.ts          # every queue write: join, walk-in, call next, token actions, pause/resume
+│   │   │   ├── queries.ts          # reads for Server Components (public and staff views)
+│   │   │   ├── views.ts            # maps rows to contract shapes
+│   │   │   ├── token-status.ts, queue-rules.ts, position.ts, eta.ts, token-label.ts  # pure rules
+│   │   │   ├── clinic-time.ts      # clinic-timezone day and opening hours
+│   │   │   └── http.ts             # route helpers: UUIDs, JSON body, idempotency key, clientIp()
+│   │   ├── doctor/                 # availability, serving doctors, doctor panel queries
+│   │   ├── clinics/                # clinic settings, opening hours, holidays, QR
+│   │   ├── services/               # service admin
+│   │   ├── staff/                  # staff admin, admin password reset
+│   │   ├── invitations/            # invitation tokens (hash only), create and accept
+│   │   ├── analytics/              # reception dashboard, admin analytics, audit log
+│   │   ├── audit/record-audit.ts   # recordAudit(tx, event)
+│   │   ├── notifications/
+│   │   │   ├── events.ts           # SHARED: outbox event types and payloads, enqueueOutboxEvent()
+│   │   │   ├── outbox-worker.ts    # processOutboxBatch(): claim, send, retry, strip links
+│   │   │   ├── templates.ts        # invitation and password reset emails
+│   │   │   └── password-reset.ts   # queues the reset email for Better Auth
+│   │   ├── retention/              # clears old patient names; internal job auth
+│   │   ├── platform/               # clinics, users, subscriptions, billing, support, settings, platform audit
+│   │   └── onboarding/             # self-service signup, slug checks
+│   ├── generated/prisma/           # Prisma client output (gitignored, made by `prisma generate`)
 │   ├── lib/
-│   │   ├── db/
-│   │   │   └── index.ts            # getDb(): lazy Prisma client with @prisma/adapter-pg
+│   │   ├── auth/                   # Better Auth instance, session, guards, permission matrix, staff context, role→home
+│   │   ├── db/index.ts             # getDb(): lazy Prisma client with @prisma/adapter-pg
+│   │   ├── email/                  # sender interface: Resend, or in-memory for dev and tests
+│   │   ├── errors/                 # AppError, ERROR_STATUS, toErrorResponse(), withApiHandler()
 │   │   ├── env.ts                  # getEnv(): Zod-validated environment, read lazily
-│   │   ├── errors/                 # AppError, ERROR_CODES, toErrorResponse(), withApiHandler()
-│   │   └── utils.ts                # cn() helper from shadcn/ui
+│   │   ├── idempotency.ts          # idempotency keys and request fingerprints
+│   │   ├── rate-limit.ts           # in-memory fixed-window limiter (single instance)
+│   │   ├── log.ts                  # structured error logs
+│   │   └── utils.ts                # cn() helper
 │   └── tests/
-│       ├── unit/                   # Vitest, jsdom or node environment
-│       ├── integration/            # Vitest against the queuecare_test database
-│       └── e2e/                    # Playwright
-├── .dockerignore                   # keeps node_modules, .next, .env out of images
-├── .env.example                    # example environment values, no secrets
-├── .gitignore
-├── .prettierrc.json                # Prettier + Tailwind class sorting
+│       ├── setup-dom.ts
+│       ├── unit/                   # Vitest; one folder per area (queue, patient, receptionist, doctor, admin, auth, ...)
+│       ├── integration/            # Vitest against queuecare_test; one folder per area
+│       └── e2e/                    # Playwright; auth.setup.ts saves the receptionist session, auth-state.ts gives each sign-in spec its own client address
+├── .dockerignore, .env.example, .gitignore, .prettierignore, .prettierrc.json
 ├── AGENTS.md                       # generated by Next.js 16 --- keep at root
+├── components.json                 # shadcn/ui settings
 ├── Dockerfile                      # stages: base, deps, dev, builder, runner, e2e
-├── docker-compose.yml              # services: db, app, web (test), e2e (test)
+├── docker-compose.yml              # services: db, app, worker, retention; web and e2e in the test profile
 ├── eslint.config.mjs
-├── next.config.ts                  # output: 'standalone', cacheComponents
-├── package.json
-├── package-lock.json
-├── playwright.config.ts
-├── prisma.config.ts                # Prisma 7 config: schema, migrations, datasource URL
+├── next.config.ts                  # standalone output, cacheComponents, security headers and CSP
+├── package.json, package-lock.json
+├── playwright.config.ts            # setup project, then 390 / 834 / 1280 px projects
+├── prisma.config.ts                # Prisma 7 config: schema, migrations, seed, datasource URL
 ├── README.md                       # setup and commands --- start here
 ├── tsconfig.json
-└── vitest.config.mts
+└── vitest.config.mts               # unit (jsdom) and integration (node, test database) projects
 ```
 
 `README.md` and `AGENTS.md` stay at the root: GitHub shows the README
@@ -99,27 +137,36 @@ root. All other Markdown documentation goes in `docs/`.
 
 | You are adding... | Put it in | Notes |
 |---|---|---|
-| A page or layout | `src/app/<route group>/...` | Pages fetch data and render; no business rules. |
-| An API endpoint | `src/app/api/.../route.ts` | Keep it thin: wrap with `withApiHandler()`, check access, validate with Zod, call a feature service, return the result. |
-| A business rule or queue operation | `src/features/<module>/` | All queue logic lives in `src/features/queue/`. Never in React components or route files. |
-| A database query | `src/features/<module>/` | Get the client with `getDb()` from `src/lib/db`. |
-| A reusable UI piece | `src/components/<area>/` | shadcn/ui primitives in `ui/`; QueueCare components (ticket stub, KPI card) in `queue/`, `layout/`, `charts/`. |
+| A page or layout | `src/app/<route group>/...` | Pages load data and render; no business rules. Session and database reads sit under `<Suspense>` (cacheComponents is on). |
+| An API endpoint | `src/app/api/.../route.ts` | Keep it thin: `withApiHandler()`, Zod, a guard on the **loaded** resource's clinic, then a feature function. |
+| A queue rule or operation | `src/features/queue/` | All queue writes go through `service.ts`. Never in React components or route files. |
+| A change to what queue screens send or receive | `src/features/queue/contracts.ts` | Shared by the API and the patient, reception and doctor screens. Add fields; don't change existing ones. |
+| A new email or outbox event | `src/features/notifications/events.ts` | Add the type and payload, write it with `enqueueOutboxEvent()` in the same transaction, then handle it in `outbox-worker.ts`. |
+| Other business rules or queries | `src/features/<module>/` | Get the client with `getDb()` from `src/lib/db`. Record staff changes with `recordAudit()`. |
+| A staff menu link | `src/components/layout/staff-nav.ts` | Set `tab: true` to show it in the phone tab bar (keep to four per role). |
+| A reusable UI piece | `src/components/<area>/` | shadcn/ui primitives in `ui/`; QueueCare pieces by area. |
 | A component used by one page only | Next to that page | Move it to `src/components/` once a second page needs it. |
-| A new error type | `src/lib/errors/` | Add a stable code to `ERROR_CODES`. |
-| A new environment variable | `src/lib/env.ts` and `.env.example` | Add it to the Zod schema; never read `process.env` directly elsewhere. |
-| A schema change | `prisma/schema.prisma` + a new migration | Run `npx prisma migrate dev` inside the `app` container. |
-| A unit test | `src/tests/unit/` | Mirror the source path, e.g. `src/tests/unit/lib/errors.test.ts`. |
-| An integration test | `src/tests/integration/` | Runs against `queuecare_test`; never against the dev database. |
-| An end-to-end test | `src/tests/e2e/` | Playwright; one main flow per screen. |
+| A new error type | `src/lib/errors/app-error.ts` | Add a stable code and its HTTP status to `ERROR_STATUS`. |
+| A new environment variable | `src/lib/env.ts` and `.env.example` | Add it to the Zod schema; never read `process.env` directly elsewhere. Add development values to `docker-compose.yml`. |
+| A schema change | `prisma/schema.prisma` + a new migration | Create the migration from the host against `localhost:5442` (see README), so the migration file lands in the repository. |
+| A form | the component | Give every `<form onSubmit>` `method="post"`; `src/tests/unit/forms-post.test.ts` fails otherwise. |
+| A unit test | `src/tests/unit/<area>/` | |
+| An integration test | `src/tests/integration/<area>/` | Runs against `queuecare_test`. Create rows with unique names and clean up only your own. |
+| An end-to-end test | `src/tests/e2e/` | Sign in at most once per spec, with `test.use(clientAddress(n))`, or reuse the saved receptionist session. |
 | Documentation | `docs/` | Link to PLAN.md sections instead of copying them. |
 
 ### Rules
 
-- Features may import from `src/lib/`. `src/lib/` never imports from
-  `src/features/`.
-- One feature calls another through its exported service functions,
-  not by reaching into its files.
-- Components never import Prisma or `src/lib/db`.
-- Do not commit `src/generated/`; it is rebuilt by `prisma generate`.
+- Features may import from `src/lib/`. `src/lib/` should not import
+  from `src/features/`. Known exception: `src/lib/auth/auth.ts` imports
+  the password reset email from `src/features/notifications/`, because
+  Better Auth needs it as a callback.
+- One feature calls another through its exported functions, not by
+  reaching into its internals.
+- Components never import Prisma or `src/lib/db`. Known exception:
+  `src/components/platform/platform-session.ts` (a server-only session
+  loader) reads the user's name and email; move it to
+  `src/features/platform/` when you next touch it.
+- Do not commit `src/generated/`; `prisma generate` rebuilds it.
 - Adapt this layout when there is a clear need, and update this file in
   the same change.

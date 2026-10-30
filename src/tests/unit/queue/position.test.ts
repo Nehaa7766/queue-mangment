@@ -48,9 +48,7 @@ describe("peopleAhead", () => {
   });
 
   it("works when the token itself is not in the list", () => {
-    expect(peopleAhead(token("x", 10), [token("a", 1), token("b", 2)])).toBe(
-      2,
-    );
+    expect(peopleAhead(token("x", 10), [token("a", 1), token("b", 2)])).toBe(2);
   });
 });
 

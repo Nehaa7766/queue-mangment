@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QueueCare
 
-## Getting Started
+Clinic queue management. Patients scan a clinic QR code to join a queue and follow their token on their phone. Reception, doctors and clinic admins run the queue from role-based dashboards.
 
-First, run the development server:
+## Requirements
+
+Only **Docker** (Docker Desktop on Windows and macOS). Node.js, PostgreSQL and the browsers for end-to-end tests all run in containers.
+
+## Quick start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up --watch
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This starts PostgreSQL and the Next.js dev server. Open <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`--watch` copies your edits into the container as you save, and rebuilds the container when `package-lock.json` or `prisma/schema.prisma` changes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The first time, create the tables and the demo clinic:
 
-## Learn More
+```bash
+docker compose exec app sh -c 'npm run db:deploy && npx prisma db seed'
+```
 
-To learn more about Next.js, take a look at the following resources:
+Check the app and database are up:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+curl http://localhost:3000/api/health
+# {"status":"ok","database":"ok"}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If port 3000 is taken on your machine, pick another: `APP_PORT=3100 docker compose up --watch`. The same works for `DB_PORT` (default 5442) and `WEB_PORT` (default 3001).
 
-## Deploy on Vercel
+## Demo data
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The seed creates **Demo Clinic** (`/q/demo-clinic`) with three services (General `A`, Pediatrics `B`, Dental `C`) and an open queue for each, today. Staff accounts all use the password `queuecare-dev`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Email | Role | Lands on |
+|---|---|---|
+| `reception@demo-clinic.test` | Receptionist | `/receptionist` |
+| `doctor@demo-clinic.test` | Doctor | `/doctor` |
+| `admin@demo-clinic.test` | Clinic admin | `/admin/dashboard` |
+| `superadmin@queuecare.test` | Platform super admin | `/super-admin/dashboard` |
+
+These are development accounts only. Never seed them into production.
+
+## Everyday commands
+
+Run these while `docker compose up --watch` is running in another terminal.
+
+| Task | Command |
+|---|---|
+| Lint | `docker compose exec app npm run lint` |
+| Type-check | `docker compose exec app npm run typecheck` |
+| Format code | `docker compose exec app npm run format` |
+| Unit and integration tests | `docker compose exec app npm test` |
+| Create a migration | `docker compose run --rm -v ./prisma:/app/prisma app npx prisma migrate dev --name <name>` (mounts `prisma/` so the new migration lands in your repo; Watch only syncs into the container) |
+| Migrate and seed the test database | `docker compose exec app sh -c 'DATABASE_URL=$TEST_DATABASE_URL npm run db:deploy && DATABASE_URL=$TEST_DATABASE_URL npx prisma db seed'` |
+| Production build and end-to-end tests | `docker compose --profile test run --rm e2e` (migrate and seed the test database first) |
+| Stop everything | `docker compose --profile test down` |
+| Stop and delete the database | `docker compose --profile test down --volumes` |
+
+The end-to-end run builds the production image (`web`, on <http://localhost:3001>) and runs Playwright against it at phone, tablet and desktop widths. The report is saved to `playwright-report/`.
+
+## Containers
+
+| Service | What it runs |
+|---|---|
+| `db` | PostgreSQL 17 with two databases, `queuecare_dev` and `queuecare_test`, on host port 5442 so it doesn't clash with a locally installed PostgreSQL |
+| `app` | Next.js dev server with hot reload (Dockerfile target `dev`) |
+| `worker` | Calls `/api/internal/outbox/process` every 10 seconds to send queued emails (staff invitations, password resets) |
+| `retention` | Calls `/api/internal/retention/run` once a day to clear old patient names |
+| `web` | Production build, `node server.js` (target `runner`, `test` profile only) |
+| `e2e` | Playwright with browsers preinstalled (target `e2e`, `test` profile only) |
+
+## Environment variables
+
+Compose sets the database URLs, auth secrets and the internal job secret for the containers, using development-only values. To add other values, copy `.env.example` to `.env`. Never commit `.env`.
+
+Email: without `RESEND_API_KEY`, development keeps emails in memory and logs one redacted line per email, so no real email is sent. To send real email, set `RESEND_API_KEY` and `EMAIL_FROM` (an address on a domain verified with Resend) in `.env`.
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [docs/PLAN.md](docs/PLAN.md) | Full product and technical plan |
+| [docs/PHASES.md](docs/PHASES.md) | Delivery phases with tasks and exit criteria |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, request flow and Docker setup |
+| [docs/FOLDER_STRUCTURE.md](docs/FOLDER_STRUCTURE.md) | Where each kind of code lives |
+| [docs/GUI_RULES.md](docs/GUI_RULES.md) | Design tokens and UI rules |
+| [docs/RUNBOOK.md](docs/RUNBOOK.md) | Deploying, backups and restore, rollback, monitoring, incidents |
+| [docs/SECURITY_REVIEW.md](docs/SECURITY_REVIEW.md) | Security findings and their status |
+| [docs/PRIVACY.md](docs/PRIVACY.md) | What patient data is kept, and for how long |
+| [docs/STAFF_GUIDE.md](docs/STAFF_GUIDE.md) | One-page guides for reception and doctors |
+
+## Tech stack
+
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Better Auth, Prisma 7, PostgreSQL 17, Zod, Recharts, Vitest, React Testing Library and Playwright.

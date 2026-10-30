@@ -14,18 +14,27 @@ export default defineConfig({
     browserName: "chromium",
     trace: "on-first-retry",
   },
-  // The three widths every screen must work at (docs/PLAN.md §12.13).
+  // The three widths every screen must work at (docs/PLAN.md §12.13),
+  // after a one-off sign-in that saves the receptionist session.
   projects: [
+    { name: "setup", testMatch: /.*\.setup\.ts/ },
     {
       name: "phone-390",
-      use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+      dependencies: ["setup"],
+      use: {
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
     },
     {
       name: "tablet-834",
+      dependencies: ["setup"],
       use: { viewport: { width: 834, height: 1194 }, hasTouch: true },
     },
     {
       name: "desktop-1280",
+      dependencies: ["setup"],
       use: { viewport: { width: 1280, height: 800 } },
     },
   ],

@@ -75,9 +75,9 @@ describe("token actions", () => {
     if (status === from) {
       expect(assertAction(action, status, allowRequeue)).toBe(to);
     } else {
-      expect(errorCodeOf(() => assertAction(action, status, allowRequeue))).toBe(
-        "INVALID_STATE_TRANSITION",
-      );
+      expect(
+        errorCodeOf(() => assertAction(action, status, allowRequeue)),
+      ).toBe("INVALID_STATE_TRANSITION");
     }
   });
 

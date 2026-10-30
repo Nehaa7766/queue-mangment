@@ -143,56 +143,56 @@ chosen.
 
 Setup
 
-- [ ] Initialize Next.js (App Router) with TypeScript in strict mode.
-- [ ] Add Tailwind CSS, shadcn/ui and Lucide React.
-- [ ] Create the folder layout from PLAN.md §7 (current layout:
+- [x] Initialize Next.js (App Router) with TypeScript in strict mode.
+- [x] Add Tailwind CSS, shadcn/ui and Lucide React.
+- [x] Create the folder layout from PLAN.md §7 (current layout:
   `FOLDER_STRUCTURE.md`).
 
 Docker
 
-- [ ] Dockerfile with `dev`, `builder`, `runner` and `e2e` stages
+- [x] Dockerfile with `dev`, `builder`, `runner` and `e2e` stages
   (`runner` uses the Next.js standalone output).
-- [ ] docker-compose with `db`, `app` (hot reload through Compose Watch),
+- [x] docker-compose with `db`, `app` (hot reload through Compose Watch),
   and `web` + `e2e` under the `test` profile.
-- [ ] `.dockerignore` that keeps `node_modules`, `.next` and `.env` files
+- [x] `.dockerignore` that keeps `node_modules`, `.next` and `.env` files
   out of images.
 
 Design system
 
-- [ ] Add the QueueCare color, radius and font tokens from PLAN.md
+- [x] Add the QueueCare color, radius and font tokens from PLAN.md
   §12.12 as a `@theme` block in `src/app/globals.css` (Tailwind v4).
-- [ ] Load Plus Jakarta Sans, Inter and Noto Sans Devanagari through
+- [x] Load Plus Jakarta Sans, Inter and Noto Sans Devanagari through
   `next/font/google`.
-- [ ] Write `GUI_RULES.md` from PLAN.md §12 (tokens, components, layout,
+- [x] Write `GUI_RULES.md` from PLAN.md §12 (tokens, components, layout,
   accessibility).
 - [ ] Convert the older mockups (owner dashboard, doctors, profiles) to
   the QueueCare palette before their phases start.
 
 Data
 
-- [ ] Run PostgreSQL 17 in Docker Compose, with a `queuecare_dev` and a
+- [x] Run PostgreSQL 17 in Docker Compose, with a `queuecare_dev` and a
   separate `queuecare_test` database.
-- [ ] Add Prisma with one shared client in `src/lib/db`.
+- [x] Add Prisma with one shared client in `src/lib/db`.
 
 Configuration and errors
 
-- [ ] Validate environment variables with Zod at startup. Required:
+- [x] Validate environment variables with Zod at startup. Required:
   `DATABASE_URL` and the auth secret. Optional: `RESEND_API_KEY`,
   `EMAIL_FROM`.
-- [ ] Add `.env.example` and keep `.env` files with secrets out of git.
-- [ ] Add an `AppError` class, the error codes from PLAN.md §14, and one
+- [x] Add `.env.example` and keep `.env` files with secrets out of git.
+- [x] Add an `AppError` class, the error codes from PLAN.md §14, and one
   helper that turns errors into the response shape in PLAN.md §11.
-- [ ] Attach a request ID to each API request and its log lines.
-- [ ] Add `GET /api/health`, which checks the database connection.
+- [x] Attach a request ID to each API request and its log lines.
+- [x] Add `GET /api/health`, which checks the database connection.
 
 Quality
 
-- [ ] Configure ESLint, Prettier and a `typecheck` script.
-- [ ] Set up Vitest, React Testing Library and Playwright, each with one
+- [x] Configure ESLint, Prettier and a `typecheck` script.
+- [x] Set up Vitest, React Testing Library and Playwright, each with one
   passing smoke test.
-- [ ] Add CI (GitHub Actions) that runs lint, type-check, tests, build
+- [x] Add CI (GitHub Actions) that runs lint, type-check, tests, build
   and end-to-end tests through docker compose on every pull request.
-- [ ] Write the README: Docker-only setup, commands, environment
+- [x] Write the README: Docker-only setup, commands, environment
   variables, running tests.
 
 ### Exit criteria
@@ -215,50 +215,50 @@ collected, wait-target scope.
 
 Schema
 
-- [ ] Model Clinic, User, ClinicMembership, Service, Queue, QueueToken,
+- [x] Model Clinic, User, ClinicMembership, Service, Queue, QueueToken,
   AuditEvent, OutboxEvent and IdempotencyRecord (PLAN.md §8).
-- [ ] Add enums for staff role, token status (PLAN.md §9) and queue
+- [x] Add enums for staff role, token status (PLAN.md §9) and queue
   status (`OPEN`, `PAUSED`, `CLOSED`).
-- [ ] Store the platform Super Admin role on the user, separate from
+- [x] Store the platform Super Admin role on the user, separate from
   clinic memberships.
-- [ ] Add the constraints and indexes from PLAN.md §8, including
+- [x] Add the constraints and indexes from PLAN.md §8, including
   `@@unique([queueId, sequenceNumber])` and a unique `publicTokenId`.
-- [ ] Store each queue's date in the clinic's timezone and document the
+- [x] Store each queue's date in the clinic's timezone and document the
   rule.
-- [ ] Create the first migration.
-- [ ] Write a seed script: one demo clinic, three services, one user per
+- [x] Create the first migration.
+- [x] Write a seed script: one demo clinic, three services, one user per
   role, an open queue for today, default queue settings.
 
 Authentication
 
-- [ ] Set up Auth.js (or the chosen alternative) with secure session
+- [x] Set up Better Auth (chosen over Auth.js, whose v5 is still beta) with secure session
   cookies.
-- [ ] Hash passwords with a strong algorithm (for example argon2id or
+- [x] Hash passwords with a strong algorithm (for example argon2id or
   bcrypt).
-- [ ] Build login and logout. Let clinic admins reset a staff password;
+- [x] Build login and logout. Let clinic admins reset a staff password;
   self-service reset by email comes in Phase 8.
-- [ ] Rate-limit login attempts.
+- [x] Rate-limit login attempts.
 
 Authorization
 
-- [ ] Add server helpers: `requireSession()`,
+- [x] Add server helpers: `requireSession()`,
   `requireClinicRole(clinicId, roles)` and `requirePlatformAdmin()`.
-- [ ] Load each resource first, then check that the user belongs to that
+- [x] Load each resource first, then check that the user belongs to that
   resource's clinic. Never trust a clinic ID, role or owner sent by the
   client.
-- [ ] Protect the `(staff)`, `(clinic-admin)` and `(platform-admin)`
+- [x] Protect the `(staff)`, `(clinic-admin)` and `(platform-admin)`
   route groups. Page redirects are a convenience only; every API handler
   checks access again.
-- [ ] Add Unauthorized, 404 and error pages.
+- [x] Add Unauthorized, 404 and error pages.
 
 Shared building blocks
 
-- [ ] `recordAudit(tx, event)`: writes an audit event inside the
+- [x] `recordAudit(tx, event)`: writes an audit event inside the
   caller's transaction.
-- [ ] Idempotency helper: stores key, request fingerprint and result;
+- [x] Idempotency helper: stores key, request fingerprint and result;
   returns the stored result on retry; rejects the same key with a
   different request.
-- [ ] Rate limiter for public endpoints, backed by the database or
+- [x] Rate limiter for public endpoints, backed by the database or
   memory. If memory, document that it only works on a single instance.
 
 ### Tests
@@ -291,46 +291,46 @@ remote joining, daily reset and token labels.
 
 Rules
 
-- [ ] Write the allowed-transition table in `src/features/queue/` and
+- [x] Write the allowed-transition table in `src/features/queue/` and
   reject every other transition.
-- [ ] Keep all queue logic in the queue service. Route handlers only
+- [x] Keep all queue logic in the queue service. Route handlers only
   authenticate, validate, call the service and map errors.
 
 Operations
 
-- [ ] Get or create today's queue for a service, using the clinic's
+- [x] Get or create today's queue for a service, using the clinic's
   timezone.
-- [ ] Join queue: check that the queue is open and the service active.
+- [x] Join queue: check that the queue is open and the service active.
   In one transaction, allocate the sequence number, create the token
   with an unguessable `publicTokenId`, write the audit event (and an
   outbox event when a notification applies), and store the idempotency
   result.
-- [ ] Allocate sequence numbers with an atomic counter, for example
+- [x] Allocate sequence numbers with an atomic counter, for example
   `UPDATE ... SET next_sequence = next_sequence + 1 RETURNING` through
   Prisma raw SQL. Keep the unique constraint as a final guard and turn a
   conflict into a clear error.
-- [ ] Generate display labels (for example `A-101`) in the format chosen
+- [x] Generate display labels (for example `A-101`) in the format chosen
   in Phase 0.
-- [ ] Call next: claim the next eligible token with a row lock
+- [x] Call next: claim the next eligible token with a row lock
   (`FOR UPDATE SKIP LOCKED`) or a conditional update. Re-check the queue
   status inside the transaction. Return `409` if another request claimed
   it first.
-- [ ] Recall, skip, requeue and cancel according to the Phase 0
+- [x] Recall, skip, requeue and cancel according to the Phase 0
   policies. Recall must not create a new token.
-- [ ] Start and complete a consultation. Block a second active
+- [x] Start and complete a consultation. Block a second active
   consultation for the same doctor if policy allows only one.
-- [ ] Pause, resume and close a queue.
-- [ ] Position: count the waiting tokens ahead, ignoring tokens that are
+- [x] Pause, resume and close a queue.
+- [x] Position: count the waiting tokens ahead, ignoring tokens that are
   no longer waiting.
-- [ ] ETA: return a range, plus a "rough estimate" flag when there is
+- [x] ETA: return a range, plus a "rough estimate" flag when there is
   little data.
 
 API
 
-- [ ] Build the public, receptionist and doctor endpoints from PLAN.md
+- [x] Build the public, receptionist and doctor endpoints from PLAN.md
   §11.
-- [ ] Validate every request body with Zod.
-- [ ] Public token status returns only: token label, status, people
+- [x] Validate every request body with Zod.
+- [x] Public token status returns only: token label, status, people
   ahead, ETA range, service name, clinic name and last-updated time.
 
 ### Tests
@@ -365,26 +365,26 @@ with no login.\
 
 ### Tasks
 
-- [ ] `/q/[clinicSlug]`: clinic name, open or closed status, today's
+- [x] `/q/[clinicSlug]`: clinic name, open or closed status, today's
   hours and active services.
-- [ ] Service selection, then a confirmation screen with an explicit
+- [x] Service selection, then a confirmation screen with an explicit
   **Join queue** button. Scanning the code or choosing a service never
   creates a token.
-- [ ] Generate the idempotency key when the confirmation screen opens
+- [x] Generate the idempotency key when the confirmation screen opens
   and keep it in `sessionStorage`, so a double tap or a retry does not
   create a second token.
-- [ ] After joining, redirect to `/token/[publicTokenId]`.
-- [ ] Token page: ticket stub as the hero, people ahead, ETA range,
+- [x] After joining, redirect to `/token/[publicTokenId]`.
+- [x] Token page: ticket stub as the hero, people ahead, ETA range,
   "updated X min ago".
-- [ ] Poll for status (start at 10--15 seconds; stop while the tab is
+- [x] Poll for status (start at 10--15 seconds; stop while the tab is
   hidden).
-- [ ] States: your turn, in consultation, completed, skipped, cancelled,
+- [x] States: your turn, in consultation, completed, skipped, cancelled,
   queue paused, queue closed, token not found.
-- [ ] Accessibility: `aria-live="polite"` on the status area, body text
+- [x] Accessibility: `aria-live="polite"` on the status area, body text
   at least 16px, tap targets at least 48px, reduced motion respected.
 - [ ] Language toggle (English / हिंदी / मराठी), if confirmed for v1.
-- [ ] Short privacy notice on the join screen.
-- [ ] A temporary QR code pointing at `/q/[clinicSlug]` for testing.
+- [x] Short privacy notice on the join screen.
+- [x] A temporary QR code pointing at `/q/[clinicSlug]` for testing.
   Proper QR management comes in Phase 7.
 
 ### Tests
@@ -412,41 +412,41 @@ with no login.\
 
 App shell (shared by all staff panels)
 
-- [ ] Full sidebar at `lg`, icon rail at `md`, slate top bar with bottom
+- [x] Full sidebar at `lg`, icon rail at `md`, slate top bar with bottom
   tab bar below `md` (PLAN.md §12.6).
-- [ ] Header with page title, queue status, search, notifications and
+- [x] Header with page title, queue status, search, notifications and
   user menu.
-- [ ] Navigation built from the user's role.
+- [x] Navigation built from the user's role.
 
 Live queue (`/receptionist/queue`)
 
-- [ ] Now serving ticket with grace countdown, **Call next** (keyboard
+- [x] Now serving ticket with grace countdown, **Call next** (keyboard
   `N`), Recall and Skip. Read the grace period and wait target from
   clinic settings (seeded values until Phase 7).
-- [ ] Up next ticket rows; the waited time turns `#B4532A` above the
+- [x] Up next ticket rows; the waited time turns `#B4532A` above the
   wait target.
-- [ ] Disable Call next while the queue is paused or empty, and show
+- [x] Disable Call next while the queue is paused or empty, and show
   why.
-- [ ] On a `409` conflict, refresh the queue and say that another staff
+- [x] On a `409` conflict, refresh the queue and say that another staff
   member already acted.
-- [ ] Pause and resume with a confirmation and a page banner.
+- [x] Pause and resume with a confirmation and a page banner.
 
 Other pages
 
-- [ ] Register walk-in drawer (`/receptionist/walk-in`) with the minimum
+- [x] Register walk-in drawer (`/receptionist/walk-in`) with the minimum
   fields and an idempotency key.
-- [ ] Dashboard (`/receptionist`): four KPI cards, queue flow chart,
+- [x] Dashboard (`/receptionist`): four KPI cards, queue flow chart,
   waiting-by-service donut, recent activity from audit events, compact
   queue card (PLAN.md §12.7).
-- [ ] Queue history (`/receptionist/history`) and token details.
+- [x] Queue history (`/receptionist/history`) and token details.
 
 Behavior
 
-- [ ] Optimistic updates with rollback and an error toast.
-- [ ] Confirmation for destructive actions; Undo toast for reversible
+- [x] Optimistic updates with rollback and an error toast.
+- [x] Confirmation for destructive actions; Undo toast for reversible
   ones.
-- [ ] Poll the staff queue.
-- [ ] Loading, empty, error and success states on every page.
+- [x] Poll the staff queue.
+- [x] Loading, empty, error and success states on every page.
 
 ### Tests
 
@@ -470,14 +470,14 @@ consultation.\
 
 ### Tasks
 
-- [ ] Doctor dashboard (`/doctor`): current patient, up next,
+- [x] Doctor dashboard (`/doctor`): current patient, up next,
   availability toggle.
-- [ ] My queue (`/doctor/queue`), showing only the tokens this doctor
+- [x] My queue (`/doctor/queue`), showing only the tokens this doctor
   may see.
-- [ ] Current consultation (`/doctor/consultation`) with Start and
+- [x] Current consultation (`/doctor/consultation`) with Start and
   Complete. Show only name, token and service --- no medical data.
-- [ ] Consultation history (`/doctor/history`) with minimal fields.
-- [ ] Availability, delay and break (`/doctor/availability`). A break
+- [x] Consultation history (`/doctor/history`) with minimal fields.
+- [x] Availability, delay and break (`/doctor/availability`). A break
   shows a banner on the reception and patient screens.
 
 ### Tests
@@ -504,24 +504,24 @@ consultation.\
 
 ### Tasks
 
-- [ ] Services (`/admin/services`): create, edit and soft-disable,
+- [x] Services (`/admin/services`): create, edit and soft-disable,
   keeping history.
-- [ ] Doctors and staff (`/admin/doctors`, `/admin/staff`): add, edit,
+- [x] Doctors and staff (`/admin/doctors`, `/admin/staff`): add, edit,
   deactivate, reset password. Invitations produce a copyable link for
   now; email delivery comes in Phase 8.
-- [ ] Accept staff invitation page.
-- [ ] Roles and permissions (`/admin/roles`).
-- [ ] Clinic profile, opening hours and holidays (`/admin/settings`).
-- [ ] Queue settings: maximum size, grace period, wait target, no-show
+- [x] Accept staff invitation page.
+- [x] Roles and permissions (`/admin/roles`).
+- [x] Clinic profile, opening hours and holidays (`/admin/settings`).
+- [x] Queue settings: maximum size, grace period, wait target, no-show
   action.
-- [ ] QR code (`/admin/qr-code`): permanent link to `/q/[clinicSlug]`,
+- [x] QR code (`/admin/qr-code`): permanent link to `/q/[clinicSlug]`,
   PNG/SVG download and a printable poster.
-- [ ] Analytics (`/admin/analytics`) covering the pilot metrics in
+- [x] Analytics (`/admin/analytics`) covering the pilot metrics in
   PLAN.md §2, built with Recharts.
-- [ ] Audit log (`/admin/audit`) with filters for date, staff member and
+- [x] Audit log (`/admin/audit`) with filters for date, staff member and
   action.
-- [ ] Admin dashboard (`/admin/dashboard`).
-- [ ] Only clinic admins can change settings, checked on the server.
+- [x] Admin dashboard (`/admin/dashboard`).
+- [x] Only clinic admins can change settings, checked on the server.
 
 ### Tests
 
@@ -551,13 +551,13 @@ notifications), Email and Notifications
 
 - [ ] Measure polling load and how up to date screens feel; tune the
   interval.
-- [ ] Outbox worker: picks up unprocessed events, is safe to run twice,
+- [x] Outbox worker: picks up unprocessed events, is safe to run twice,
   retries with bounded backoff and stores a cleaned-up `lastError`.
-- [ ] Resend integration on the server only, using `RESEND_API_KEY` and
+- [x] Resend integration on the server only, using `RESEND_API_KEY` and
   an `EMAIL_FROM` address on a verified domain.
-- [ ] Emails: staff invitation and password reset first. Token
+- [x] Emails: staff invitation and password reset first. Token
   confirmation and turn notification only if pilot clinics want them.
-- [ ] Mock email sender for local development; never send real patient
+- [x] Mock email sender for local development; never send real patient
   email from a dev environment.
 - [ ] Add Server-Sent Events only if pilot feedback needs them and the
   hosting supports long-lived connections.
@@ -587,10 +587,10 @@ real use.\
 
 Quality and security
 
-- [ ] Complete the E2E suite listed in PLAN.md §15.
-- [ ] Run concurrency, access-control and rate-limit tests against a
+- [x] Complete the E2E suite listed in PLAN.md §15.
+- [x] Run concurrency, access-control and rate-limit tests against a
   production-like environment.
-- [ ] Accessibility checks (for example axe with Playwright), keyboard
+- [x] Accessibility checks (for example axe with Playwright), keyboard
   runs and contrast checks.
 - [ ] Security review against PLAN.md §13: access control, cross-clinic
   access, XSS, injection, CSRF and brute force.
@@ -601,14 +601,14 @@ Operations
 - [ ] Turn on automatic backups and do one real restore test.
 - [ ] Monitoring: error logs with request IDs, health-check alerts,
   counts of failed queue actions and outbox events.
-- [ ] Write a rollback plan that covers both the app version and
+- [x] Write a rollback plan that covers both the app version and
   database migrations.
 
 Privacy
 
-- [ ] Write the data retention and deletion policy and enforce it (for
+- [x] Write the data retention and deletion policy and enforce it (for
   example a scheduled cleanup of old patient names).
-- [ ] Write an incident response checklist.
+- [x] Write an incident response checklist.
 
 Pilot
 
@@ -637,11 +637,11 @@ Pilot
 
 - [ ] Review Indian privacy and data-protection requirements with
   qualified counsel before commercial launch.
-- [ ] Self-service clinic signup and setup wizard.
-- [ ] Super Admin panel: dashboard, clinics, users, plans and
+- [x] Self-service clinic signup and setup wizard.
+- [x] Super Admin panel: dashboard, clinics, users, plans and
   subscriptions, billing overview, activity logs, support and settings.
 - [ ] Pricing and subscription billing.
-- [ ] Support workflow and help content.
+- [x] Support workflow and help content.
 - [ ] Multi-branch support and advanced analytics, only when customers
   ask for them.
 

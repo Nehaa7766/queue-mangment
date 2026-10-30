@@ -48,3 +48,9 @@ next-env.d.ts
 /playwright-report/
 /test-results/
 /blob-report/
+
+# playwright saved sessions
+/playwright/.auth/
+
+# database dumps (docker/postgres/backup.sh)
+/backups/
