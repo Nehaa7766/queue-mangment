@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import {
+  createContext,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { z } from "zod";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,7 +16,11 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getHomePath } from "@/lib/auth/actions";
 import { authClient } from "@/lib/auth/client";
-import type { DemoAccount } from "@/lib/auth/demo-accounts";
+
+// Lets the demo accounts box (demo-accounts.tsx) fill in this form.
+export const DemoFillContext = createContext<
+  ((email: string, password: string) => void) | null
+>(null);
 
 const signInSchema = z.object({
   email: z.email("Enter a valid email address."),
@@ -33,10 +43,11 @@ function messageForStatus(status: number | undefined): string {
 }
 
 export function LoginForm({
-  demo,
+  children,
 }: {
-  // Demo accounts to offer under the form (development and demo servers).
-  demo?: { accounts: DemoAccount[]; password: string };
+  // Shown under the button: the demo accounts box, where enabled. It streams
+  // in on its own, so the form itself is never replaced while someone types.
+  children?: ReactNode;
 }) {
   const router = useRouter();
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -159,38 +170,7 @@ export function LoginForm({
         {pending ? "Opening…" : "Open my counter"}
       </Button>
 
-      {demo && demo.accounts.length > 0 && (
-        <section
-          aria-labelledby="demo-accounts-title"
-          className="rounded-btn border border-dashed border-border bg-background/60 p-3"
-        >
-          {/* Named "Demo accounts" only, so the region doesn't also match
-              getByLabel("Password"). */}
-          <p className="text-xs font-semibold">
-            <span id="demo-accounts-title">Demo accounts</span>{" "}
-            <span className="font-normal text-muted-foreground">
-              · password <code className="font-mono">{demo.password}</code>
-            </span>
-          </p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {demo.accounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => fillDemoAccount(account.email, demo.password)}
-                className="min-w-0 rounded-btn border border-border bg-card px-3 py-2 text-left transition-colors outline-none hover:border-brand hover:bg-brand-tint focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <span className="block text-xs font-semibold">
-                  {account.role}
-                </span>
-                <span className="block truncate text-[11px] text-muted-foreground">
-                  {account.email}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+      <DemoFillContext value={fillDemoAccount}>{children}</DemoFillContext>
     </form>
   );
 }

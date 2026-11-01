@@ -1,39 +1,21 @@
 import type { Metadata } from "next";
-import { connection } from "next/server";
-import { Suspense } from "react";
+import { DemoAccounts } from "@/components/auth/demo-accounts";
 import { LoginForm } from "@/components/auth/login-form";
 import { LoginTicket } from "@/components/auth/login-ticket";
-import {
-  DEMO_ACCOUNTS,
-  DEMO_PASSWORD,
-  demoLoginsEnabled,
-} from "@/lib/auth/demo-accounts";
 
 export const metadata: Metadata = {
   title: "Sign in · QueueCare",
 };
 
-// The ticket and form are prerendered; whether to offer the demo accounts is
-// decided per request from the environment, so it streams in after.
+// Fully static. The demo accounts box asks the server for its list after
+// loading (development and demo servers only), so nothing here waits on a
+// request or replaces the form while someone types.
 export default function LoginPage() {
   return (
     <LoginTicket>
-      <Suspense fallback={<LoginForm />}>
-        <LoginFormWithDemo />
-      </Suspense>
+      <LoginForm>
+        <DemoAccounts />
+      </LoginForm>
     </LoginTicket>
-  );
-}
-
-async function LoginFormWithDemo() {
-  await connection();
-  return (
-    <LoginForm
-      demo={
-        demoLoginsEnabled()
-          ? { accounts: DEMO_ACCOUNTS, password: DEMO_PASSWORD }
-          : undefined
-      }
-    />
   );
 }

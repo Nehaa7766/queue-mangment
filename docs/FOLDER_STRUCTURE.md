@@ -52,6 +52,7 @@ queue-mangment/
 │   │   └── api/
 │   │       ├── health/             # GET /api/health; outbox counts only with the job token
 │   │       ├── auth/[...all]/      # Better Auth endpoints
+│   │       ├── demo-accounts/      # seeded demo logins for the sign-in page (empty unless dev or DEMO_LOGINS=true)
 │   │       ├── public/             # clinic view, token status, patient cancel
 │   │       ├── queues/[queueId]/   # tokens (GET staff, POST join), call-next, walk-ins, pause, resume
 │   │       ├── tokens/[tokenId]/[action]/  # recall, skip, requeue, cancel, start, complete
