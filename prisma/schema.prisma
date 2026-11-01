@@ -154,6 +154,9 @@ model Clinic {
   subscription   Subscription?
   supportTickets SupportTicket[]
   logo           ClinicLogo?
+  conversations  Conversation[]
+  messages       Message[]
+  broadcasts     Broadcast[]
 
   @@map("clinics")
 }
@@ -196,6 +199,8 @@ model User {
   sentInvitations     StaffInvitation[]    @relation("InvitedBy")
   supportTickets      SupportTicket[]
   platformAuditEvents PlatformAuditEvent[]
+  sentMessages        Message[]
+  broadcasts          Broadcast[]
 
   @@map("users")
 }
@@ -376,12 +381,14 @@ model QueueToken {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  queue          Queue        @relation(fields: [queueId], references: [id])
-  clinic         Clinic       @relation(fields: [clinicId], references: [id])
-  service        Service      @relation(fields: [serviceId], references: [id])
-  assignedDoctor User?        @relation("AssignedDoctor", fields: [assignedDoctorId], references: [id])
-  createdBy      User?        @relation("CreatedBy", fields: [createdByUserId], references: [id])
-  auditEvents    AuditEvent[]
+  queue               Queue                @relation(fields: [queueId], references: [id])
+  clinic              Clinic               @relation(fields: [clinicId], references: [id])
+  service             Service              @relation(fields: [serviceId], references: [id])
+  assignedDoctor      User?                @relation("AssignedDoctor", fields: [assignedDoctorId], references: [id])
+  createdBy           User?                @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  auditEvents         AuditEvent[]
+  conversations       Conversation[]
+  broadcastRecipients BroadcastRecipient[]
 
   @@unique([queueId, sequenceNumber])
   @@index([queueId, status, sortKey])
@@ -597,4 +604,148 @@ model PlatformSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("platform_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Messaging between patients and staff (docs/MESSAGING.md)
+// ---------------------------------------------------------------------------
+
+// Who the patient is talking to. Each token has at most one conversation
+// per channel, and they are separate: doctors never see the reception chat
+// and reception never sees the doctor chat (except the fallback below).
+enum ConversationChannel {
+  // Reception desk: receptionists and clinic admins.
+  RECEPTION
+  // The doctor. Who answers follows the visit (src/features/messaging/access.ts):
+  // the doctor who started the consultation; before that, the doctors who
+  // serve the token's service; reception when no doctor serves it.
+  DOCTOR
+}
+
+enum MessageSender {
+  PATIENT
+  STAFF
+}
+
+enum BroadcastStatus {
+  SENDING
+  DONE
+}
+
+enum BroadcastRecipientStatus {
+  PENDING
+  SENT
+  // Left out when its turn came, e.g. the visit had ended (skip_reason).
+  SKIPPED
+  // Gave up after repeated errors (last_error).
+  FAILED
+}
+
+// One private chat between a patient's visit (token) and one side of the
+// clinic. Created on the first message. Closing is computed from the token
+// (read-only 2 hours after the visit ends), so there is no closed flag.
+model Conversation {
+  id       String              @id @default(uuid(7)) @db.Uuid
+  clinicId String              @map("clinic_id") @db.Uuid
+  tokenId  String              @map("token_id") @db.Uuid
+  channel  ConversationChannel
+
+  lastMessageAt   DateTime? @map("last_message_at")
+  // Messages the other side hasn't read yet; reset to 0 when it reads.
+  unreadByStaff   Int       @default(0) @map("unread_by_staff")
+  unreadByPatient Int       @default(0) @map("unread_by_patient")
+  // When each side last read the chat: a message is "seen" once the other
+  // side's read time is at or after it.
+  staffReadAt     DateTime? @map("staff_read_at")
+  patientReadAt   DateTime? @map("patient_read_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  clinic              Clinic               @relation(fields: [clinicId], references: [id])
+  token               QueueToken           @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  messages            Message[]
+  broadcastRecipients BroadcastRecipient[]
+
+  @@unique([tokenId, channel])
+  @@index([clinicId, channel, lastMessageAt])
+  @@map("conversations")
+}
+
+// Text only, at most 1,000 characters. Rendered as plain text, never HTML.
+model Message {
+  id              String        @id @default(uuid(7)) @db.Uuid
+  conversationId  String        @map("conversation_id") @db.Uuid
+  clinicId        String        @map("clinic_id") @db.Uuid
+  sender          MessageSender
+  // The staff member who wrote it; null for patient messages.
+  senderUserId    String?       @map("sender_user_id") @db.Uuid
+  body            String        @db.VarChar(1000)
+  // Chosen by the sending screen (a UUID), so a retried send returns the
+  // stored message instead of adding a copy. Announcements use
+  // "announcement:<broadcastId>".
+  clientMessageId String        @map("client_message_id") @db.VarChar(64)
+  broadcastId     String?       @map("broadcast_id") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  clinic       Clinic       @relation(fields: [clinicId], references: [id])
+  senderUser   User?        @relation(fields: [senderUserId], references: [id], onDelete: SetNull)
+  broadcast    Broadcast?   @relation(fields: [broadcastId], references: [id], onDelete: SetNull)
+
+  @@unique([conversationId, clientMessageId])
+  @@index([conversationId, createdAt])
+  @@index([clinicId, createdAt])
+  @@map("messages")
+}
+
+// An announcement: one text sent as a separate private message into each
+// recipient's reception chat. Recipients are fixed when it is created.
+model Broadcast {
+  id              String          @id @default(uuid(7)) @db.Uuid
+  clinicId        String          @map("clinic_id") @db.Uuid
+  createdByUserId String?         @map("created_by_user_id") @db.Uuid
+  body            String          @db.VarChar(1000)
+  // Services it went to; empty means every service.
+  serviceIds      String[]        @map("service_ids") @db.Uuid
+  status          BroadcastStatus @default(SENDING)
+  totalRecipients Int             @map("total_recipients")
+  // From the sending screen, so a double click creates one announcement.
+  idempotencyKey  String          @map("idempotency_key") @db.VarChar(128)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  completedAt     DateTime?       @map("completed_at")
+
+  clinic     Clinic               @relation(fields: [clinicId], references: [id])
+  createdBy  User?                @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  recipients BroadcastRecipient[]
+  messages   Message[]
+
+  @@unique([clinicId, idempotencyKey])
+  @@index([clinicId, createdAt])
+  @@map("broadcasts")
+}
+
+// One patient (token) of an announcement, and what happened for them. The
+// rows are the work queue: PENDING rows are processed in small batches and
+// picked up again after a crash.
+model BroadcastRecipient {
+  id             String                   @id @default(uuid(7)) @db.Uuid
+  broadcastId    String                   @map("broadcast_id") @db.Uuid
+  tokenId        String                   @map("token_id") @db.Uuid
+  status         BroadcastRecipientStatus @default(PENDING)
+  conversationId String?                  @map("conversation_id") @db.Uuid
+  messageId      String?                  @map("message_id") @db.Uuid
+  // Why the patient was left out, e.g. "VISIT_ENDED".
+  skipReason     String?                  @map("skip_reason") @db.VarChar(40)
+  attempts       Int                      @default(0)
+  lastError      String?                  @map("last_error") @db.VarChar(300)
+  processedAt    DateTime?                @map("processed_at")
+
+  broadcast    Broadcast     @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  token        QueueToken    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@unique([broadcastId, tokenId])
+  @@index([broadcastId, status])
+  @@map("broadcast_recipients")
 }

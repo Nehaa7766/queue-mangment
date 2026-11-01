@@ -31,6 +31,9 @@ beforeEach(() => {
     clinics: 2,
     patientNamesCleared: 3,
     idempotencyRecordsDeleted: 4,
+    messagesDeleted: 5,
+    conversationsDeleted: 6,
+    broadcastsDeleted: 7,
   });
 });
 
@@ -45,6 +48,9 @@ describe("POST /api/internal/retention/run", () => {
       clinics: 2,
       patientNamesCleared: 3,
       idempotencyRecordsDeleted: 4,
+      messagesDeleted: 5,
+      conversationsDeleted: 6,
+      broadcastsDeleted: 7,
     });
   });
 

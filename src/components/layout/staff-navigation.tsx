@@ -3,8 +3,14 @@
 import { ChevronDownIcon, CircleUserIcon, LifeBuoyIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
+import { useStaffMessaging } from "@/components/messaging/staff-messaging";
 import { FOCUS } from "@/components/shell/app-sidebar";
+import {
+  badgeText,
+  withNavBadges,
+  type NavGroup,
+} from "@/components/shell/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,17 +21,41 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { isActive, navForRole, ROLE_LABELS, WALK_IN_HREF } from "./staff-nav";
+import {
+  isActive,
+  MESSAGES_HREF,
+  navForRole,
+  ROLE_LABELS,
+  WALK_IN_HREF,
+} from "./staff-nav";
 import { useStaff } from "./staff-provider";
+
+// The signed-in member's menu, with the unread chat count on Messages.
+export function useStaffNavGroups(): NavGroup[] {
+  const { role } = useStaff();
+  const { unread } = useStaffMessaging();
+  return useMemo(
+    () =>
+      withNavBadges(navForRole(role), {
+        [MESSAGES_HREF[role]]: unread
+          ? {
+              count: unread,
+              label: unread === 1 ? "1 unread chat" : `${unread} unread chats`,
+            }
+          : undefined,
+      }),
+    [role, unread],
+  );
+}
 
 // Phone (below md): bottom tabs with a raised mocha Walk-in button.
 export function BottomTabs({ accountActions }: { accountActions?: ReactNode }) {
-  const { role } = useStaff();
+  const groups = useStaffNavGroups();
   const pathname = usePathname();
-  const items = navForRole(role)
+  const items = groups
     .flatMap((group) => group.items)
     .filter((item) => item.tab);
-  const hasWalkIn = navForRole(role).some((group) =>
+  const hasWalkIn = groups.some((group) =>
     group.items.some((item) => item.href === WALK_IN_HREF),
   );
   // Walk-in sits in the middle slot.
@@ -44,11 +74,24 @@ export function BottomTabs({ accountActions }: { accountActions?: ReactNode }) {
           active ? "text-brand" : "text-muted-foreground",
         )}
       >
-        <item.icon
-          className={cn("size-5", active && "stroke-[2.5]")}
-          aria-hidden
-        />
+        <span className="relative">
+          <item.icon
+            className={cn("size-5", active && "stroke-[2.5]")}
+            aria-hidden
+          />
+          {item.badge && item.badge.count > 0 && (
+            <span
+              aria-hidden
+              className="absolute -top-1.5 left-3 min-w-5 rounded-full border-2 border-card bg-brand px-1 text-center text-[10px] leading-4 font-semibold text-white tabular-nums"
+            >
+              {badgeText(item.badge.count)}
+            </span>
+          )}
+        </span>
         {item.shortLabel ?? item.label}
+        {item.badge && item.badge.count > 0 && (
+          <span className="sr-only">, {item.badge.label}</span>
+        )}
       </Link>
     );
   };

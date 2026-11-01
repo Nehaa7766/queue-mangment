@@ -6,10 +6,16 @@ export const ERROR_STATUS = {
   CLINIC_NOT_FOUND: 404,
   TOKEN_NOT_FOUND: 404,
   QUEUE_NOT_FOUND: 404,
+  // Messaging (docs/MESSAGING.md): also returned for a chat in another clinic
+  // or one the caller may not see, so its existence is never revealed.
+  CONVERSATION_NOT_FOUND: 404,
+  ANNOUNCEMENT_NOT_FOUND: 404,
   QUEUE_CLOSED: 409,
   QUEUE_PAUSED: 409,
   INVALID_STATE_TRANSITION: 409,
   IDEMPOTENCY_CONFLICT: 409,
+  // The chat turned read-only (docs/MESSAGING.md, decision 5).
+  CONVERSATION_CLOSED: 409,
   RATE_LIMITED: 429,
   INTERNAL_ERROR: 500,
 } as const satisfies Record<string, number>;

@@ -8,7 +8,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 flex-col bg-background text-base">
       <header className="sticky top-0 z-10 border-b border-border bg-card">
-        <div className="mx-auto flex h-16 w-full max-w-md items-center gap-2.5 px-4">
+        <div className="mx-auto flex h-16 w-full max-w-md items-center gap-2.5 px-4 lg:max-w-6xl lg:px-6">
           <BrandMark />
           <BrandName />
           <span className="ml-auto text-sm text-muted-foreground">

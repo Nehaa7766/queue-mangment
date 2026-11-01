@@ -37,6 +37,9 @@ const ACTION_LABELS: Record<Action, string> = {
   "staff.manage": "Invite staff and change roles",
   "analytics.view": "See analytics and reports",
   "audit.view": "See the audit log",
+  "messages.reception": "Answer patient chats for the front desk",
+  "messages.doctor": "Answer patient chats for their own patients",
+  "announcements.send": "Send announcements to waiting patients",
 };
 
 export default function AdminRolesPage() {

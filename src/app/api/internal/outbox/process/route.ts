@@ -1,3 +1,4 @@
+import { processPendingBroadcasts } from "@/features/messaging/broadcasts";
 import { processOutboxBatch } from "@/features/notifications/outbox-worker";
 import { checkInternalJobAuth } from "@/features/retention/internal-job-auth";
 import { getEnv } from "@/lib/env";
@@ -22,5 +23,9 @@ export const POST = withApiHandler(async (request, _context, requestId) => {
     throw new AppError("UNAUTHENTICATED", "A valid job token is required.");
   }
 
-  return Response.json(await processOutboxBatch());
+  const outbox = await processOutboxBatch();
+  // Announcements left over from a crashed or busy process
+  // (docs/MESSAGING.md, "Announcements").
+  const announcements = await processPendingBroadcasts();
+  return Response.json({ ...outbox, announcements });
 });

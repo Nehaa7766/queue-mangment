@@ -10,6 +10,7 @@ export const AUDIT_CATEGORIES = [
   "service",
   "staff",
   "clinic",
+  "message",
 ] as const;
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
 
@@ -21,6 +22,7 @@ export const AUDIT_CATEGORY_LABELS: Record<AuditCategory, string> = {
   service: "Services",
   staff: "Staff",
   clinic: "Clinic settings",
+  message: "Messages",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -53,6 +55,10 @@ const ACTION_LABELS: Record<string, string> = {
   "clinic.hours_updated": "Opening hours changed",
   "clinic.holiday_added": "Holiday added",
   "clinic.holiday_removed": "Holiday removed",
+  "message.doctor_assigned": "Doctor took over the patient's chat",
+  "message.broadcast_sent": "Announcement sent",
+  "retention.patient_names_cleared": "Old patient names cleared",
+  "retention.messages_deleted": "Old messages deleted",
 };
 
 // Known actions get a fixed label; new ones still read sensibly.

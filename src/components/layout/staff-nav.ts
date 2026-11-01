@@ -6,6 +6,8 @@ import {
   HistoryIcon,
   LayoutDashboardIcon,
   ListOrderedIcon,
+  MegaphoneIcon,
+  MessagesSquareIcon,
   QrCodeIcon,
   ScrollTextIcon,
   SettingsIcon,
@@ -33,6 +35,14 @@ export const ROLE_LABELS: Record<MembershipRole, string> = {
   RECEPTIONIST: "Receptionist",
   DOCTOR: "Doctor",
   CLINIC_ADMIN: "Clinic admin",
+};
+
+// Each panel's Messages page (docs/MESSAGING.md "Screens"). Clinic admins
+// answer reception chats from their own panel.
+export const MESSAGES_HREF: Record<MembershipRole, string> = {
+  RECEPTIONIST: "/receptionist/messages",
+  DOCTOR: "/doctor/messages",
+  CLINIC_ADMIN: "/admin/messages",
 };
 
 // Where the bell in the top bar leads.
@@ -66,6 +76,22 @@ const RECEPTION: NavGroup[] = [
         label: "Register walk-in",
         shortLabel: "Walk-in",
         icon: UserPlusIcon,
+      },
+    ],
+  },
+  {
+    label: "Patients",
+    items: [
+      {
+        href: "/receptionist/messages",
+        label: "Messages",
+        icon: MessagesSquareIcon,
+        tab: true,
+      },
+      {
+        href: "/receptionist/announcements",
+        label: "Announcements",
+        icon: MegaphoneIcon,
       },
     ],
   },
@@ -110,6 +136,13 @@ const DOCTOR: NavGroup[] = [
         icon: StethoscopeIcon,
         tab: true,
       },
+      // In the phone tab bar instead of history, which stays in the menu.
+      {
+        href: "/doctor/messages",
+        label: "Messages",
+        icon: MessagesSquareIcon,
+        tab: true,
+      },
     ],
   },
   {
@@ -120,7 +153,6 @@ const DOCTOR: NavGroup[] = [
         label: "Consultation history",
         shortLabel: "History",
         icon: HistoryIcon,
-        tab: true,
       },
       {
         href: "/doctor/availability",
@@ -153,6 +185,22 @@ const CLINIC_ADMIN: NavGroup[] = [
         label: "Audit activity",
         shortLabel: "Audit",
         icon: ScrollTextIcon,
+      },
+    ],
+  },
+  {
+    label: "Patients",
+    items: [
+      {
+        href: "/admin/messages",
+        label: "Messages",
+        icon: MessagesSquareIcon,
+        tab: true,
+      },
+      {
+        href: "/admin/announcements",
+        label: "Announcements",
+        icon: MegaphoneIcon,
       },
     ],
   },

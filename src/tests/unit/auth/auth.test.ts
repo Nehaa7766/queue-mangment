@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { memoryAdapter } from "better-auth/adapters/memory";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createAuth } from "@/lib/auth/auth";
+import { createAuth, devTrustedOrigins } from "@/lib/auth/auth";
 
 // Runs the real Better Auth flows against an in-memory store, so it needs no
 // database. The password hash comes from prisma/seed.sql, which proves the
@@ -135,5 +135,59 @@ describe("email and password sign-in", () => {
 
     expect(response.ok).toBe(false);
     expect(store.user).toHaveLength(3);
+  });
+});
+
+describe("sign-in origin check", () => {
+  // A browser sign-in from the dev server on another port. Better Auth
+  // checks the Origin when the request carries cookies, as browsers' do.
+  function signInFrom(
+    target: ReturnType<typeof createAuth>,
+    origin: string,
+  ): Promise<Response> {
+    return target.handler(
+      new Request("http://localhost:3000/api/auth/sign-in/email", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin,
+          cookie: "theme=light",
+        },
+        body: JSON.stringify({
+          email: "reception@demo-clinic.test",
+          password: "queuecare-dev",
+        }),
+      }),
+    );
+  }
+
+  function authWith(trustedOrigins: string[]) {
+    return createAuth({
+      database: memoryAdapter(store),
+      secret: "test-secret-0123456789abcdef0123456789",
+      baseURL: "http://localhost:3000",
+      secureCookies: false,
+      rateLimit: false,
+      trustedOrigins,
+      forceOriginCheck: true,
+    });
+  }
+
+  it("refuses another port unless it is trusted", async () => {
+    const response = await signInFrom(authWith([]), "http://localhost:3001");
+
+    expect(response.status).toBe(403);
+  });
+
+  it("accepts any local port in development", async () => {
+    const dev = authWith(devTrustedOrigins("development"));
+
+    expect((await signInFrom(dev, "http://localhost:3001")).status).toBe(200);
+    expect((await signInFrom(dev, "http://127.0.0.1:3200")).status).toBe(200);
+    expect((await signInFrom(dev, "http://evil.example")).status).toBe(403);
+  });
+
+  it("trusts no extra origins in production", () => {
+    expect(devTrustedOrigins("production")).toEqual([]);
   });
 });

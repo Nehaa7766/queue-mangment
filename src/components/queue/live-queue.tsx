@@ -80,12 +80,15 @@ export function LiveQueue({
   queues,
   initialNow,
   timezone,
+  messagesHref,
 }: {
   initialView: StaffQueueView;
   queues: StaffQueueSummary[];
   initialNow: number;
   // The clinic's, for times in the patient lists.
   timezone: string;
+  // The panel's Messages page, for the Message action on patient rows.
+  messagesHref?: string;
 }) {
   const [view, setView] = useState(initialView);
   const [pending, setPending] = useState<LiveQueueAction["type"] | null>(null);
@@ -365,6 +368,7 @@ export function LiveQueue({
           onRequeue={(token) =>
             void run({ type: "requeue", tokenId: token.id })
           }
+          messagesHref={messagesHref}
         />
       </DashboardCard>
 

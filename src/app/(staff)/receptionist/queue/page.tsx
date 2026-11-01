@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
+import { MESSAGES_HREF } from "@/components/layout/staff-nav";
 import {
   RECEPTION_ROLES,
   requestNow,
@@ -69,6 +70,7 @@ async function LiveQueueSection({
         queues={queues}
         initialNow={now}
         timezone={context.clinic.timezone}
+        messagesHref={MESSAGES_HREF[context.role]}
       />
     </>
   );

@@ -29,6 +29,20 @@ describe("permission matrix", () => {
     expect(can("CLINIC_ADMIN", "consultation.start")).toBe(false);
   });
 
+  it("puts reception and admins on the front-desk side of messaging", () => {
+    for (const role of ["RECEPTIONIST", "CLINIC_ADMIN"] as const) {
+      expect(can(role, "messages.reception")).toBe(true);
+      expect(can(role, "announcements.send")).toBe(true);
+      expect(can(role, "messages.doctor")).toBe(false);
+    }
+  });
+
+  it("puts doctors on the doctor side of messaging only", () => {
+    expect(can("DOCTOR", "messages.doctor")).toBe(true);
+    expect(can("DOCTOR", "messages.reception")).toBe(false);
+    expect(can("DOCTOR", "announcements.send")).toBe(false);
+  });
+
   it("grants every action to at least one role", () => {
     const roles = Object.values(MembershipRole);
     for (const action of ACTIONS) {

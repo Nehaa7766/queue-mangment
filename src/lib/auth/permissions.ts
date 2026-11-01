@@ -16,6 +16,11 @@ export const ACTIONS = [
   "staff.manage",
   "analytics.view",
   "audit.view",
+  // Messaging (docs/MESSAGING.md). Which chats someone sees is decided per
+  // chat by src/features/messaging/access.ts; these say which side they are on.
+  "messages.reception",
+  "messages.doctor",
+  "announcements.send",
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];
@@ -28,6 +33,8 @@ const RECEPTION_ACTIONS = [
   "queue.requeue",
   "queue.pauseResume",
   "walkIn.create",
+  "messages.reception",
+  "announcements.send",
 ] as const satisfies readonly Action[];
 
 // Server-side source of truth for who may do what (docs/PLAN.md §3).
@@ -41,6 +48,7 @@ const PERMISSIONS: Record<MembershipRole, readonly Action[]> = {
     "consultation.start",
     "consultation.complete",
     "doctor.availability",
+    "messages.doctor",
   ],
   // Admins can run the front desk too, but don't act as doctors.
   CLINIC_ADMIN: [

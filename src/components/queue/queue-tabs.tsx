@@ -7,6 +7,7 @@ import {
   consultationMinutes,
   durationMinutes,
 } from "@/components/doctor/patient-display";
+import { MessagePatientButton } from "@/components/messaging/message-patient-button";
 import { Button } from "@/components/ui/button";
 import type {
   StaffQueueView,
@@ -34,6 +35,7 @@ export function QueueTabs({
   onRecall,
   onSkip,
   onRequeue,
+  messagesHref,
 }: {
   view: StaffQueueView;
   featuredId: string | null;
@@ -43,8 +45,21 @@ export function QueueTabs({
   onRecall: (token: StaffTokenView) => void;
   onSkip: (token: StaffTokenView) => void;
   onRequeue: (token: StaffTokenView) => void;
+  // The panel's Messages page; adds a Message action to waiting and called
+  // patients.
+  messagesHref?: string;
 }) {
   const [tab, setTab] = useState<QueueTab>("upNext");
+  const message = (token: StaffTokenView) =>
+    messagesHref ? (
+      <MessagePatientButton
+        tokenId={token.id}
+        tokenLabel={token.tokenLabel}
+        patientName={displayName(token.patientName)}
+        messagesHref={messagesHref}
+        compact
+      />
+    ) : null;
   const groups = queueTabGroups(view, featuredId);
   const time = (iso: string | null) =>
     iso ? formatClinicTime(iso, timezone) : null;
@@ -102,6 +117,7 @@ export function QueueTabs({
                       </span>
                     </span>
                     <span className="flex gap-2">
+                      {message(token)}
                       <Button
                         size="sm"
                         variant="outline"
@@ -144,6 +160,7 @@ export function QueueTabs({
                     now={now}
                     waitTargetMinutes={view.settings.waitTargetMinutes}
                     href={details(token)}
+                    action={message(token)}
                   />
                 ))}
               </ol>

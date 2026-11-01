@@ -4,10 +4,12 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
 import { PageHeader } from "@/components/layout/page-header";
+import { MESSAGES_HREF } from "@/components/layout/staff-nav";
 import {
   RECEPTION_ROLES,
   requireStaffPage,
 } from "@/components/layout/staff-session";
+import { MessagePatientButton } from "@/components/messaging/message-patient-button";
 import { TokenStatusPill } from "@/components/queue/status-pill";
 import {
   displayName,
@@ -111,6 +113,12 @@ async function TokenDetails({ params }: { params: Params }) {
               {token.recallCount > 0 && ` · recalled ${token.recallCount}×`}
             </p>
             <div className="flex flex-wrap gap-2">
+              <MessagePatientButton
+                tokenId={token.id}
+                tokenLabel={token.tokenLabel}
+                patientName={displayName(token.patientName)}
+                messagesHref={MESSAGES_HREF[context.role]}
+              />
               <Link
                 href="/receptionist/queue"
                 className={cn(

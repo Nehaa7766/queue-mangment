@@ -26,7 +26,21 @@ type AuthConfig = {
   ipAddressHeader?: string;
   // Records the reset email; password reset is disabled without it.
   sendResetPassword?: (request: ResetPasswordRequest) => Promise<void>;
+  // Origins allowed besides baseURL's, e.g. "http://localhost:*".
+  trustedOrigins?: string[];
+  // Better Auth skips its origin check when NODE_ENV is "test"; tests of
+  // the check itself set this to true.
+  forceOriginCheck?: boolean;
 };
+
+// `next dev` moves to the next free port when 3000 is taken, so in
+// development sign-in is accepted from any local port. Production builds
+// trust only BETTER_AUTH_URL.
+export function devTrustedOrigins(nodeEnv: string): string[] {
+  return nodeEnv === "production"
+    ? []
+    : ["http://localhost:*", "http://127.0.0.1:*"];
+}
 
 // Staff stay signed in for a working day; activity extends the session.
 const SESSION_SECONDS = 60 * 60 * 12;
@@ -36,6 +50,7 @@ export function createAuth(config: AuthConfig) {
     database: config.database,
     secret: config.secret,
     baseURL: config.baseURL,
+    trustedOrigins: config.trustedOrigins,
     emailAndPassword: {
       enabled: true,
       // Staff accounts are created by clinic admins or the seed, never by
@@ -86,6 +101,7 @@ export function createAuth(config: AuthConfig) {
       // Ids are uuid columns in PostgreSQL.
       database: { generateId: "uuid" },
       useSecureCookies: config.secureCookies,
+      disableOriginCheck: config.forceOriginCheck ? false : undefined,
       ipAddress: config.ipAddressHeader
         ? { ipAddressHeaders: [config.ipAddressHeader] }
         : undefined,
@@ -110,6 +126,7 @@ export function getAuth(): Auth {
       secureCookies: env.BETTER_AUTH_URL.startsWith("https://"),
       ipAddressHeader: env.TRUSTED_IP_HEADER,
       sendResetPassword: queuePasswordResetEmail,
+      trustedOrigins: devTrustedOrigins(env.NODE_ENV),
     });
   }
   return cachedAuth;

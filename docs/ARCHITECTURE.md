@@ -158,7 +158,8 @@ Other modules use its exported functions only.
 | `analytics` | Reception dashboard, admin analytics, audit log reads |
 | `audit` | `recordAudit()` inside the caller's transaction |
 | `notifications` | Outbox event contract, the outbox worker, email templates, password reset email |
-| `retention` | Clearing old patient names; bearer check for internal jobs |
+| `retention` | Clearing old patient names, deleting old messages and announcements; bearer check for internal jobs |
+| `messaging` | Patient ↔ clinic chats and announcements: routing rule, sends, reads, inbox, live updates over Server-Sent Events with PostgreSQL LISTEN/NOTIFY. See [MESSAGING.md](MESSAGING.md). |
 | `platform` | Super admin: clinics, users, subscriptions, billing overview, support tickets, settings, platform audit |
 | `onboarding` | Self-service clinic signup |
 
@@ -318,8 +319,10 @@ specs reuse one saved session from `auth.setup.ts`.
 
 ## 9. Live updates
 
-Polling, no Server-Sent Events yet
-([PLAN.md §5](PLAN.md#5-recommended-technology-stack)).
+Polling for queue screens
+([PLAN.md §5](PLAN.md#5-recommended-technology-stack)). Messaging uses
+Server-Sent Events backed by PostgreSQL LISTEN/NOTIFY (one extra database
+connection per server process); see [MESSAGING.md](MESSAGING.md).
 
 | Screen | Interval |
 |---|---|

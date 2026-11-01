@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { StaffTokenView } from "@/features/queue/contracts";
 import { cn } from "@/lib/utils";
 import { displayName, minutesSince } from "./token-display";
@@ -9,19 +10,22 @@ export type MiniTicketToken = Pick<
 >;
 
 // One "Up next" row (docs/GUI_RULES.md §5). The whole row is the link, so it
-// is one tap on phones; desktop also shows a "Details" hint.
+// is one tap on phones; desktop also shows a "Details" hint. An action (e.g.
+// Message) sits beside the row, not inside the link.
 export function MiniTicketRow({
   token,
   isNext,
   now,
   waitTargetMinutes,
   href,
+  action,
 }: {
   token: MiniTicketToken;
   isNext: boolean;
   now: number;
   waitTargetMinutes: number;
   href?: string;
+  action?: ReactNode;
 }) {
   const waited = minutesSince(token.joinedAt, now);
   const overTarget = waited > waitTargetMinutes;
@@ -67,11 +71,13 @@ export function MiniTicketRow({
     </>
   );
 
-  const rowClass =
-    "flex min-h-12 overflow-hidden rounded-btn border border-border bg-card";
+  const rowClass = cn(
+    "flex min-h-12 overflow-hidden rounded-btn border border-border bg-card",
+    action && "min-w-0 flex-1",
+  );
 
   return (
-    <li>
+    <li className={action ? "flex items-center gap-2" : undefined}>
       {href ? (
         // The visible text is the accessible name, so voice control users can
         // say what they see.
@@ -87,6 +93,7 @@ export function MiniTicketRow({
       ) : (
         <div className={rowClass}>{content}</div>
       )}
+      {action}
     </li>
   );
 }

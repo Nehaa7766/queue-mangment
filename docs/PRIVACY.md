@@ -24,10 +24,15 @@ the end need a review by qualified counsel before commercial launch
 | Times joined, called, seen, finished, skipped or cancelled | Wait-time estimates and reports | Kept, without the name, for analytics |
 | Random link ID (`/token/...`) | Lets the patient check their status without an account | Kept with the token; reveals nothing once the name is cleared |
 | IP address | Rate limiting against abuse | Not stored; held in server memory for about a minute |
+| Chat messages with the clinic (text, up to 1,000 characters, and when each side read them) | Questions about the visit (docs/MESSAGING.md) | Deleted after the clinic's retention period (default **30 days**) |
 
 Not collected: phone number, email, address, date of birth, medical
 details. Reception and patients are told to enter a first name or
-initials only.
+initials only. Chats are free text, so a patient could still type
+something personal: the chat screens say they are "For questions about
+your visit. Not for medical emergencies.", message text is never written
+to logs, audit events or live notifications, and it is deleted with the
+retention period below.
 
 ### Staff
 
@@ -37,6 +42,7 @@ initials only.
 | Password | Sign-in | Stored only as a salted hash |
 | Sessions (with IP address and browser) | Keeping staff signed in; spotting misuse | 12 hours per session |
 | Audit events (who did what, when) | Accountability (PLAN.md §9 rule 15) | Not yet decided; see open questions |
+| Messages staff send to patients, and announcements (text, sender, recipients) | Answering patients; one text to many waiting patients | Deleted after the clinic's retention period |
 
 ### Operational data
 
@@ -59,6 +65,12 @@ Each run records one audit event per clinic (`retention.patient_names_cleared`)
 with the number of names cleared, so a clinic can show the deletion
 happened. The job never clears names on tokens from the last day, even
 if a clinic sets 0 days.
+
+The same job deletes chat messages and announcements (with their
+recipient lists) older than the same period, then chats with no messages
+left. It records `retention.messages_deleted` with the counts, never the
+text. Chats close for new messages 2 hours after the visit ends, so
+nothing is added to a chat long after the visit.
 
 ## Requests from people
 

@@ -20,6 +20,7 @@ queue-mangment/
 │   ├── COMMERCIAL.md               # what is built for selling, decisions still open
 │   ├── FOLDER_STRUCTURE.md         # this file
 │   ├── GUI_RULES.md                # design contract for every screen
+│   ├── MESSAGING.md                # patient chats and announcements: decisions, routing, API reference
 │   ├── PHASES.md                   # phase-by-phase delivery plan and progress
 │   ├── PLAN.md                     # full product and technical plan
 │   ├── PRIVACY.md                  # patient data kept, retention, deletion
@@ -42,6 +43,7 @@ queue-mangment/
 │   │   │   ├── q/[clinicSlug]/                 # clinic landing and service list
 │   │   │   ├── q/[clinicSlug]/join/[queueId]/  # explicit "Join queue" confirmation
 │   │   │   └── token/[publicTokenId]/          # live token status
+│   │   ├── (patient-chat)/         # the patient's full-screen chat, /token/[publicTokenId]/messages (no patient top bar)
 │   │   ├── (auth)/                 # login, unauthorized, forgot-password, reset-password, accept-invite/[token]
 │   │   ├── (staff)/                # shared staff shell; requires a clinic membership
 │   │   │   ├── receptionist/       # dashboard, queue, walk-in, history, tokens/[tokenId]
@@ -53,7 +55,8 @@ queue-mangment/
 │   │       ├── health/             # GET /api/health; outbox counts only with the job token
 │   │       ├── auth/[...all]/      # Better Auth endpoints
 │   │       ├── demo-accounts/      # seeded demo logins for the sign-in page (empty unless dev or DEMO_LOGINS=true)
-│   │       ├── public/             # clinic view, token status, patient cancel
+│   │       ├── public/             # clinic view, token status, patient cancel, patient chats (tokens/[publicTokenId]/messages/: summary, [channel] + read, events)
+│   │       ├── messages/           # staff chats: conversations (inbox, [conversationId]/messages, read), tokens/[tokenId]/[channel] (start), unread, events, announcements (+ audience, [broadcastId])
 │   │       ├── queues/[queueId]/   # tokens (GET staff, POST join), call-next, walk-ins, pause, resume
 │   │       ├── tokens/[tokenId]/[action]/  # recall, skip, requeue, cancel, start, complete
 │   │       ├── doctor/             # queue view, availability
@@ -71,7 +74,8 @@ queue-mangment/
 │   │   ├── layout/                 # staff wiring of the shell: StaffShell, StaffChrome, bottom tabs, account menu, BrandMark + BrandName; staff-nav.ts holds every staff menu
 │   │   ├── queue/                  # reception: now serving ticket, up-next rows, status pills, live queue, walk-in form
 │   │   ├── charts/                 # Recharts: reception queue flow (joined/served bars, average-wait line)
-│   │   ├── patient/                # patient screens, ticket hero, join form; messages.ts holds all patient text
+│   │   ├── patient/                # patient screens, ticket hero, join form, messaging (patient-messages.tsx: token page card, button, desktop chat; patient-chat-screen.tsx: full-screen chat); messages.ts holds all patient text
+│   │   ├── messaging/              # chat pieces for patients and staff: message list, bubble, composer, connection status; stream.ts (EventSource + backoff), conversation.ts (load, send, retry, read), pending-store.ts (unsent messages in localStorage), staff inbox and Messages page, staff-messaging.tsx (the tab's one staff stream + nav unread count)
 │   │   ├── doctor/                 # doctor screens, availability form, break and delay banners
 │   │   ├── admin/                  # admin managers and forms, opening hours editor, QR actions
 │   │   ├── platform/               # super admin: platform-chrome.tsx (wires AppShell), form-kit.tsx (sheet, fields, footer errors), clinic-profile-fields.tsx, icon-action.tsx (icon row actions + tooltips), pagination.tsx, invite-link.tsx, clinic-avatar.tsx, delete-button.tsx (type-to-confirm), *-forms.tsx, data-table, ListCard (section-card.tsx), range tabs, charts/
@@ -93,12 +97,22 @@ queue-mangment/
 │   │   ├── invitations/            # invitation tokens (hash only), create and accept
 │   │   ├── analytics/              # reception dashboard, admin analytics, audit log
 │   │   ├── audit/record-audit.ts   # recordAudit(tx, event)
+│   │   ├── messaging/              # patient ↔ clinic chats and announcements (docs/MESSAGING.md)
+│   │   │   ├── contracts.ts        # SHARED: API paths, request/response shapes and live event shapes for the messaging screens
+│   │   │   ├── rules.ts            # pure rules: closing, routing (who sees a chat), which stream gets which hint
+│   │   │   ├── access.ts           # loads what the rules need: staff member, token, doctor coverage; inbox access filter
+│   │   │   ├── service.ts          # send (idempotent), read, start a chat; one transaction each, ending in pg_notify
+│   │   │   ├── queries.ts          # message pages, patient summary, inbox, unread count
+│   │   │   ├── broadcasts.ts       # announcements: audience, create, deliver (SKIP LOCKED), list, detail
+│   │   │   ├── live.ts             # LISTEN connection (globalThis singleton) and Server-Sent Events streams
+│   │   │   ├── token-hooks.ts      # called by the queue service when a token changes (doctor assigned, chat closed)
+│   │   │   └── notify.ts, views.ts, sse.ts, limits.ts, http.ts, errors.ts, inbox-cursor.ts
 │   │   ├── notifications/
 │   │   │   ├── events.ts           # SHARED: outbox event types and payloads, enqueueOutboxEvent()
 │   │   │   ├── outbox-worker.ts    # processOutboxBatch(): claim, send, retry, strip links
 │   │   │   ├── templates.ts        # invitation and password reset emails
 │   │   │   └── password-reset.ts   # queues the reset email for Better Auth
-│   │   ├── retention/              # clears old patient names; internal job auth
+│   │   ├── retention/              # clears old patient names, deletes old messages and announcements; internal job auth
 │   │   ├── platform/               # clinics (lifecycle, hours), users, support, settings, analytics, pagination, platform audit
 │   │   └── onboarding/             # self-service signup, slug checks
 │   ├── generated/prisma/           # Prisma client output (gitignored, made by `prisma generate`)

@@ -9,7 +9,7 @@ import { BrandMark, BrandName } from "@/components/layout/brand-mark";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useShellUi } from "./shell-context";
-import { isActive, type NavGroup } from "./types";
+import { badgeText, isActive, type NavGroup } from "./types";
 
 export const FOCUS =
   "outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
@@ -97,6 +97,22 @@ function NavList({
                 <span className={collapsed ? "sr-only" : undefined}>
                   {item.label}
                 </span>
+                {item.badge && item.badge.count > 0 && (
+                  <>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "rounded-full bg-brand px-1.5 text-center text-[11px] leading-5 font-semibold text-white tabular-nums",
+                        collapsed
+                          ? "absolute top-0 right-0.5 min-w-5"
+                          : "ml-auto min-w-6",
+                      )}
+                    >
+                      {badgeText(item.badge.count)}
+                    </span>
+                    <span className="sr-only">, {item.badge.label}</span>
+                  </>
+                )}
               </Link>
             );
           })}

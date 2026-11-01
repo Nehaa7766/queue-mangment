@@ -12,6 +12,12 @@ vi.mock("@/features/notifications/outbox-worker", () => ({
   processOutboxBatch: () => processOutboxBatch(),
 }));
 
+// Same for announcements, which the endpoint also delivers.
+const processPendingBroadcasts = vi.fn();
+vi.mock("@/features/messaging/broadcasts", () => ({
+  processPendingBroadcasts: () => processPendingBroadcasts(),
+}));
+
 const { POST } = await import("@/app/api/internal/outbox/process/route");
 
 function post(authorization?: string) {
@@ -33,6 +39,14 @@ describe("POST /api/internal/outbox/process", () => {
       retrying: 0,
       failed: 0,
     });
+    processPendingBroadcasts.mockReset();
+    processPendingBroadcasts.mockResolvedValue({
+      sent: 3,
+      skipped: 1,
+      retrying: 0,
+      failed: 0,
+      completed: 1,
+    });
   });
 
   it("rejects a request without the job token", async () => {
@@ -41,6 +55,7 @@ describe("POST /api/internal/outbox/process", () => {
     expect(response.status).toBe(401);
     expect((await response.json()).error.code).toBe("UNAUTHENTICATED");
     expect(processOutboxBatch).not.toHaveBeenCalled();
+    expect(processPendingBroadcasts).not.toHaveBeenCalled();
   });
 
   it("rejects a wrong token", async () => {
@@ -59,7 +74,15 @@ describe("POST /api/internal/outbox/process", () => {
       sent: 2,
       retrying: 0,
       failed: 0,
+      announcements: {
+        sent: 3,
+        skipped: 1,
+        retrying: 0,
+        failed: 0,
+        completed: 1,
+      },
     });
     expect(processOutboxBatch).toHaveBeenCalledOnce();
+    expect(processPendingBroadcasts).toHaveBeenCalledOnce();
   });
 });

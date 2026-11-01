@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { recordAudit } from "@/features/audit/record-audit";
+import { onTokenChangedForMessaging } from "@/features/messaging/token-hooks";
 import type { ClinicAccess } from "@/lib/auth/guards";
 import { assertSameClinic } from "@/lib/auth/guards";
 import { getDb } from "@/lib/db";
@@ -389,6 +390,15 @@ export async function applyTokenAction(
       previousState: token.status,
       newState: nextStatus,
     });
+    // A recall changes nothing about the token's chats.
+    if (action !== "recall") {
+      await onTokenChangedForMessaging(tx, {
+        tokenId,
+        action,
+        actorUserId: access.user.userId,
+        previousAssignedDoctorId: token.assignedDoctorId,
+      });
+    }
   });
 }
 
@@ -480,6 +490,12 @@ export async function cancelByPatient(publicTokenId: string): Promise<void> {
       previousState: token.status,
       newState: nextStatus,
       metadata: { by: "patient" },
+    });
+    await onTokenChangedForMessaging(tx, {
+      tokenId: token.id,
+      action: "cancel",
+      actorUserId: null,
+      previousAssignedDoctorId: null,
     });
   });
 }
